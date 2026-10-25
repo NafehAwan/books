@@ -346,7 +346,7 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
             )
             VSpace(8.dp)
             CarStrip(game, Modifier.widthIn(max = 480.dp))
-            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 val pad = with(density) { 10.dp.toPx() }
                 val gap = with(density) { 8.dp.toPx() }
                 val peek = with(density) { PEEK_SPACE.toPx() }
