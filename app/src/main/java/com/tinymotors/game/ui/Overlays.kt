@@ -380,7 +380,7 @@ fun Tutorial(
                 Modifier
                     .fillMaxSize()
                     .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(top = 132.dp, end = 12.dp),
+                    .padding(top = 92.dp, end = 12.dp),
                 contentAlignment = Alignment.TopEnd,
             ) {
                 ChunkyButton(onSkip, Palette.Panel, Palette.PanelShade, stringResource(R.string.skip), Modifier.height(56.dp), CircleShape, depth = 4.dp) {
