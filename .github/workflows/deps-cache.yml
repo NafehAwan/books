@@ -18,8 +18,17 @@ jobs:
           echo "LATEST_STABLE_AGP=$AGP"
           sed -i "s/^agp = .*/agp = \"$AGP\"/" gradle/libs.versions.toml
           grep agp gradle/libs.versions.toml
+      - name: Pick newest Compose BOM that still works with compileSdk 36 (Compose 1.11.x)
+        run: |
+          M=https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom
+          for b in $(curl -s $M/maven-metadata.xml | grep -o '<version>20[0-9.]*</version>' | sed 's/<[^>]*>//g' | sort -Vr); do
+            UI=$(curl -s $M/$b/compose-bom-$b.pom | grep -A1 '<artifactId>ui</artifactId>' | grep -o '<version>[^<]*' | sed 's/<version>//')
+            echo "BOM $b -> ui $UI"
+            case "$UI" in 1.11.*) sed -i "s/^composeBom = .*/composeBom = \"$b\"/" gradle/libs.versions.toml; break;; esac
+          done
+          grep composeBom gradle/libs.versions.toml
       - name: Build everything
-        run: ./gradlew --no-configuration-cache --continue assembleDebug assembleRelease bundleRelease testDebugUnitTest lintDebug lintRelease || true
+        run: ./gradlew --no-configuration-cache --continue assembleDebug assembleRelease bundleRelease testDebugUnitTest testReleaseUnitTest lintDebug lintRelease lintVitalRelease || true
       - name: Push cache branch
         run: |
           mkdir -p /tmp/cache && cd ~/.gradle
