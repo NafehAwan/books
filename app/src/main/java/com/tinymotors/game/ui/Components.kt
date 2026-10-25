@@ -141,8 +141,9 @@ fun KidText(
     size: Float = 18f,
     color: Color = Palette.Ink,
     bold: Boolean = true,
+    align: androidx.compose.ui.text.style.TextAlign = androidx.compose.ui.text.style.TextAlign.Center,
 ) {
-    BasicText(text, modifier, style = kidText(size.sp, color, bold))
+    BasicText(text, modifier, style = kidText(size.sp, color, bold, align))
 }
 
 /** White rounded panel. */
@@ -228,7 +229,7 @@ fun KidSwitch(checked: Boolean, label: String, onChange: (Boolean) -> Unit, modi
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        KidText(label, Modifier.weight(1f), size = 20f, bold = false)
+        KidText(label, Modifier.weight(1f), size = 20f, bold = false, align = androidx.compose.ui.text.style.TextAlign.Start)
         Box(
             Modifier
                 .width(66.dp)

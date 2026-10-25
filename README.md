@@ -102,7 +102,7 @@ tools/make_audio.py          synthesises every sound and the music loop (NumPy +
 tools/make_font.py           static Fredoka font files from the OFL variable font
 tools/make_store_art.py      Play feature graphic
 tools/gpt_image.py           optional extra art with OpenAI's image model (needs your API key)
-store/                       512 px Play icon and 1024 × 500 feature graphic
+store/                       512 px Play icon, 1024 × 500 feature graphic, emulator screenshots
 scripts/                     make-keystore.sh, smoke-test.sh
 ```
 
@@ -122,6 +122,23 @@ one, removes edge fringe (nearest-solid-colour bleed, 1 px erode and feather), c
 so blue windows do not count) for the tile tint and edge. The Hypercar tile is dark navy. Preview
 sheets on white, dark and sky backgrounds are written to `tools/out/` for checking. The ground
 shadow is drawn by the app at runtime.
+
+## What has been tested
+
+* **Unit tests (38, all passing):** merge, move, swap, Hypercar never merging, spawn odds (seeded,
+  100 000 draws each), smart spawn, preview = actual car, stuck detection, tow, undo (limit,
+  rewards kept, same car after undo), unlock rewards and the 5-tow cap, win once, helper truck,
+  new game carry-over, daily-gift dates, combo timing, save-format round trip, damaged saves, and a
+  real DataStore round trip that simulates process death.
+* **Lint:** no issues in debug or release.
+* **Emulator (Android 14, Pixel 6 profile, in GitHub Actions):** `scripts/smoke-test.sh` passed:
+  launch, daily gift, Play, Add car, drag-merge, tutorial, tow, 30 rapid Add car taps until the
+  board was full (plus taps on the full board), process death and resume with the same board,
+  back button, Garage, Settings, and 1500 random taps with animations on, with no crash.
+* **APK checks:** release APK is about 2.4 MB, declares no permissions, targets SDK 36.
+* **Not tested:** a real phone (sound, music, spoken names and haptics can only be heard or felt
+  on a device), Android 7 (minSdk 24) and tablets, a TalkBack pass, and a long play-through to the
+  Hypercar on a device (the win flow is covered by unit tests).
 
 ## Choices I made where the brief left room
 
