@@ -1,0 +1,41 @@
+# Temporary helper: picks Play Billing / AdMob versions that work with compileSdk 36, resolves all
+# Gradle dependencies on a GitHub runner and pushes the cache to the ci-deps-cache branch.
+name: Deps cache
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - name: Pick versions compatible with compileSdk 36
+        run: |
+          M=https://dl.google.com/dl/android/maven2
+          pick() { # $1 = catalog key, $2 = group path, $3 = artifact
+            for v in $(curl -s $M/$2/$3/maven-metadata.xml | grep -o '<version>[0-9.]*</version>' | sed 's/<[^>]*>//g' | sort -Vr | head -8); do
+              sed -i "s/^$1 = .*/$1 = \"$v\"/" gradle/libs.versions.toml
+              if ./gradlew -q --no-configuration-cache :app:checkDebugAarMetadata >/tmp/check.log 2>&1; then echo "PICKED $1=$v"; return 0; fi
+              echo "rejected $1=$v"; grep -m3 "requires" /tmp/check.log || true
+            done
+          }
+          pick playServicesAds com/google/android/gms play-services-ads
+          pick billing com/android/billingclient billing-ktx
+          grep -E '^(billing|playServicesAds) =' gradle/libs.versions.toml
+      - name: Build everything
+        run: |
+          for t in assembleDebug testDebugUnitTest assembleRelease bundleRelease lintDebug lintRelease; do
+            ./gradlew --no-configuration-cache $t || echo "::warning::$t failed"
+          done
+      - name: Push cache branch
+        run: |
+          mkdir -p /tmp/cache && cd ~/.gradle
+          tar --exclude='*.lock' -cf - caches/modules-2 | zstd -19 -T0 > /tmp/cache/modules2.tar.zst
+          cd /tmp/cache && split -b 90m modules2.tar.zst modules2.tar.zst.part- && rm modules2.tar.zst && ls -la
+          cp $GITHUB_WORKSPACE/gradle/libs.versions.toml .
+          git init -q -b ci-deps-cache && git add -A
+          git -c user.name=ci -c user.email=ci@example.com commit -qm "Gradle dependency cache"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-deps-cache
