@@ -195,7 +195,9 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                 }
                 is GameEvent.TowGifted, GameEvent.Undone -> Unit
             }
-            snapIds.value = emptySet()
+            // forget animation requests for cars that are gone
+            val alive = vm.ui.value.game?.board?.mapNotNullTo(HashSet()) { it?.id }.orEmpty()
+            fx.keys.retainAll(alive)
         }
     }
 
@@ -290,6 +292,7 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                             if (info == null && (pos - down.position).getDistance() > viewConfiguration.touchSlop) {
                                 info = DragInfo(slot, car, slot, false)
                                 drag = info
+                                snapIds.value = emptySet()
                                 scope.launch { dragPos.snapTo(pos) }
                                 vm.click()
                             }
@@ -350,7 +353,10 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                 onTowPlaced = { layout.tow = it },
                 onAddPlaced = { layout.add = it },
                 onAdd = { vm.addCar(SystemClock.uptimeMillis()) },
-                onUndo = vm::undo,
+                onUndo = {
+                    snapIds.value = emptySet()
+                    vm.undo()
+                },
                 onTowTap = { say(res.getString(R.string.hint_tow_how), MascotMood.Hint) },
                 modifier = Modifier.widthIn(max = 480.dp),
             )
@@ -427,7 +433,10 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                 canUndo = state.canUndo,
                 score = game.score,
                 onHelper = vm::useHelper,
-                onUndo = vm::undo,
+                onUndo = {
+                    snapIds.value = emptySet()
+                    vm.undo()
+                },
                 onNewGame = vm::newGame,
             )
         } else if (state.showWin) {
