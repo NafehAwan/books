@@ -37,7 +37,6 @@ ASSETS = {
     "ui_music": ("icons_sheet", (1080, 52, 1175, 150), "key", 128),
     "ui_vibrate": ("icons_sheet", (1242, 58, 1340, 146), "key", 128),
     "ui_close": ("icons_sheet", (1406, 62, 1488, 138), "key", 128),
-    "ui_plus": ("icons_sheet", (100, 235, 230, 360), "key", 160),
     "ui_play": ("icons_sheet", (680, 245, 790, 355), "key", 128),
     "ui_garage": ("icons_sheet", (902, 242, 1030, 358), "key", 160),
     "ui_book": ("icons_sheet", (1130, 250, 1270, 350), "key", 160),
@@ -57,6 +56,10 @@ ASSETS = {
     "ui_towy_bounce": ("game_design", (592, 810, 742, 925), "rembg", 240),
     "ui_win_badge": ("game_design", (1240, 760, 1520, 990), "rembg", 420),
     "ui_towy_wink": ("screens_design", (96, 784, 338, 976), "rembg", 420),
+    # store icons from the screens sheet
+    "ui_coin": ("screens_design", (1236, 40, 1294, 94), "rembg", 128),
+    "ui_store": ("screens_design", (752, 12, 862, 108), "rembg", 160),
+    "ui_palette": ("screens_design", (655, 275, 712, 328), "key", 96),
     # settings row icons from the screens sheet
     "ui_shield": ("screens_design", (98, 692, 160, 755), "key", 96),
     "ui_lock": ("screens_design", (492, 702, 534, 748), "key", 72),

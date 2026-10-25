@@ -21,6 +21,9 @@ object GameStateCodec {
         line("rng", s.rngState)
         line("nextId", s.nextId)
         line("history", s.history.joinToString("|") { encodeSnapshot(it) })
+        line("coins", s.coins)
+        line("themes", s.ownedThemes)
+        line("theme", s.theme)
     }
 
     /** Returns null for missing, unknown or damaged data (the app then starts a new game). */
@@ -43,6 +46,9 @@ object GameStateCodec {
                 rngState = map.getValue("rng").toLong(),
                 nextId = map.getValue("nextId").toInt(),
                 history = map["history"].orEmpty().split('|').filter { it.isNotEmpty() }.map { decodeSnapshot(it) },
+                coins = map["coins"]?.toLong()?.coerceAtLeast(0) ?: 0,
+                ownedThemes = (map["themes"]?.toInt() ?: 1) or 1,
+                theme = map["theme"]?.toInt()?.coerceIn(0, Shop.THEME_COUNT - 1) ?: 0,
             )
             state
         } catch (e: IllegalArgumentException) {

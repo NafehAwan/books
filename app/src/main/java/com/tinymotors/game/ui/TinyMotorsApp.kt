@@ -8,13 +8,16 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tinymotors.game.GameViewModel
 import com.tinymotors.game.Screen
+import com.tinymotors.game.ui.theme.BoardThemes
+import com.tinymotors.game.ui.theme.LocalBoardTheme
 import com.tinymotors.game.ui.theme.LocalReduceMotion
 
 @Composable
 fun TinyMotorsApp(vm: GameViewModel, reduceMotion: Boolean) {
     val state by vm.ui.collectAsStateWithLifecycle()
     val particles = remember { ParticleSystem() }
-    CompositionLocalProvider(LocalCarArt provides vm.art, LocalReduceMotion provides reduceMotion) {
+    val theme = BoardThemes[(state.game?.theme ?: 0).coerceIn(0, BoardThemes.size - 1)]
+    CompositionLocalProvider(LocalCarArt provides vm.art, LocalReduceMotion provides reduceMotion, LocalBoardTheme provides theme) {
         // Back goes to the home screen; on the home screen it leaves the app as usual.
         BackHandler(enabled = state.screen != Screen.Home) { vm.back() }
         if (!state.loaded) {
@@ -26,6 +29,7 @@ fun TinyMotorsApp(vm: GameViewModel, reduceMotion: Boolean) {
             Screen.Game -> GameScreen(state, vm, particles)
             Screen.Garage -> GarageScreen(state, vm)
             Screen.Settings -> SettingsScreen(state, vm)
+            Screen.Store -> StoreScreen(state, vm)
         }
     }
 }

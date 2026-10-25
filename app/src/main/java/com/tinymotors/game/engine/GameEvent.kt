@@ -6,7 +6,7 @@ sealed interface GameEvent {
     data object BoardFull : GameEvent
     data class Moved(val car: Car, val from: Int, val to: Int) : GameEvent
     data class Swapped(val first: Car, val second: Car, val firstSlot: Int, val secondSlot: Int) : GameEvent
-    data class Merged(val car: Car, val slot: Int, val fromSlot: Int, val points: Int) : GameEvent
+    data class Merged(val car: Car, val slot: Int, val fromSlot: Int, val points: Int, val coins: Int) : GameEvent
     data class NewCarUnlocked(val level: Int, val towGranted: Boolean) : GameEvent
     data object HypercarBuilt : GameEvent
     data class Towed(val car: Car, val slot: Int) : GameEvent
@@ -16,5 +16,9 @@ sealed interface GameEvent {
     data object NoUndo : GameEvent
     data object Stuck : GameEvent
     data object NewGame : GameEvent
-    data class TowGifted(val added: Boolean) : GameEvent
+    data class TowGifted(val added: Boolean, val coins: Int) : GameEvent
+    data class CoinsAdded(val amount: Int) : GameEvent
+    data class ThemeBought(val id: Int) : GameEvent
+    data class ThemeSelected(val id: Int) : GameEvent
+    data class NotEnoughCoins(val missing: Long) : GameEvent
 }

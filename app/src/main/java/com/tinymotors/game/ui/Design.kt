@@ -236,7 +236,7 @@ fun DrawScope.drawRibbon(color: Color = Palette.Ribbon, shade: Color = Palette.R
 }
 
 /** Rolling hills, round trees and little flowers along the bottom of a screen. */
-fun DrawScope.drawScenery(groundTop: Float) {
+fun DrawScope.drawScenery(groundTop: Float, theme: com.tinymotors.game.ui.theme.BoardTheme) {
     val w = size.width
     val h = size.height
     val far = Path().apply {
@@ -245,16 +245,16 @@ fun DrawScope.drawScenery(groundTop: Float) {
         cubicTo(w * 0.78f, groundTop - h * 0.08f, w * 0.9f, groundTop - h * 0.03f, w, groundTop - h * 0.05f)
         lineTo(w, h); lineTo(0f, h); close()
     }
-    drawPath(far, Palette.HillFar)
+    drawPath(far, theme.hillFar)
     // trees on the far hill
     val trees = floatArrayOf(0.06f, 0.2f, 0.33f, 0.71f, 0.86f, 0.97f)
     for ((i, tx) in trees.withIndex()) {
         val x = w * tx
         val r = w * (0.045f + (i % 3) * 0.008f)
         val base = groundTop - h * 0.035f
-        drawRoundRect(Palette.Trunk, Offset(x - r * 0.12f, base - r * 0.4f), Size(r * 0.24f, r * 0.9f), CornerRadius(r * 0.1f))
-        drawCircle(Palette.TreeDark, r, Offset(x, base - r * 1.1f))
-        drawCircle(Palette.Tree, r * 0.82f, Offset(x - r * 0.18f, base - r * 1.25f))
+        drawRoundRect(theme.trunk, Offset(x - r * 0.12f, base - r * 0.4f), Size(r * 0.24f, r * 0.9f), CornerRadius(r * 0.1f))
+        drawCircle(theme.treeDark, r, Offset(x, base - r * 1.1f))
+        drawCircle(theme.tree, r * 0.82f, Offset(x - r * 0.18f, base - r * 1.25f))
         drawCircle(Color.White.copy(alpha = 0.18f), r * 0.3f, Offset(x - r * 0.4f, base - r * 1.6f))
     }
     val near = Path().apply {
@@ -262,15 +262,15 @@ fun DrawScope.drawScenery(groundTop: Float) {
         cubicTo(w * 0.3f, groundTop - h * 0.015f, w * 0.65f, groundTop + h * 0.03f, w, groundTop)
         lineTo(w, h); lineTo(0f, h); close()
     }
-    drawPath(near, Palette.Hill)
+    drawPath(near, theme.hill)
     // bushes and flowers
     for (bx in floatArrayOf(0.12f, 0.52f, 0.9f)) {
         val x = w * bx
         val y = groundTop + h * 0.03f
         val r = w * 0.04f
-        drawCircle(Palette.TreeDark, r, Offset(x - r * 0.7f, y))
-        drawCircle(Palette.Tree, r * 1.15f, Offset(x, y - r * 0.3f))
-        drawCircle(Palette.TreeDark, r * 0.9f, Offset(x + r * 0.8f, y))
+        drawCircle(theme.treeDark, r, Offset(x - r * 0.7f, y))
+        drawCircle(theme.tree, r * 1.15f, Offset(x, y - r * 0.3f))
+        drawCircle(theme.treeDark, r * 0.9f, Offset(x + r * 0.8f, y))
     }
     for (fx in floatArrayOf(0.04f, 0.27f, 0.41f, 0.64f, 0.78f, 0.95f)) {
         val x = w * fx
@@ -278,9 +278,9 @@ fun DrawScope.drawScenery(groundTop: Float) {
         val r = w * 0.011f
         for (k in 0 until 5) {
             val a = k * 1.2566f
-            drawCircle(Color.White, r, Offset(x + kotlin.math.cos(a) * r * 1.2f, y + kotlin.math.sin(a) * r * 1.2f))
+            drawCircle(theme.flower, r, Offset(x + kotlin.math.cos(a) * r * 1.2f, y + kotlin.math.sin(a) * r * 1.2f))
         }
-        drawCircle(Palette.Gold, r * 0.8f, Offset(x, y))
+        drawCircle(theme.flowerCenter, r * 0.8f, Offset(x, y))
     }
 }
 

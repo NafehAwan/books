@@ -12,6 +12,13 @@ val keystoreProps = Properties().apply {
 }
 val hasReleaseKey = keystoreProps.getProperty("storeFile")?.let { rootProject.file(it).exists() } == true
 
+// AdMob IDs. Google's public test IDs are used unless you set your own in gradle.properties
+// (admobAppId, admobBannerId, admobRewardedId). Debug builds always use the test IDs.
+val testAppId = "ca-app-pub-3940256099942544~3347511713"
+val testBannerId = "ca-app-pub-3940256099942544/9214589741"
+val testRewardedId = "ca-app-pub-3940256099942544/5224354917"
+fun prop(name: String, fallback: String) = providers.gradleProperty(name).orNull?.takeIf { it.isNotBlank() } ?: fallback
+
 android {
     namespace = "com.tinymotors.game"
     compileSdk = 36
@@ -20,8 +27,11 @@ android {
         applicationId = "com.tinymotors.game"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
+        manifestPlaceholders["admobAppId"] = prop("admobAppId", testAppId)
+        buildConfigField("String", "BANNER_AD_UNIT", "\"${prop("admobBannerId", testBannerId)}\"")
+        buildConfigField("String", "REWARDED_AD_UNIT", "\"${prop("admobRewardedId", testRewardedId)}\"")
     }
 
     signingConfigs {
@@ -36,6 +46,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["admobAppId"] = testAppId
+            buildConfigField("String", "BANNER_AD_UNIT", "\"$testBannerId\"")
+            buildConfigField("String", "REWARDED_AD_UNIT", "\"$testRewardedId\"")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -51,6 +66,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     androidResources {

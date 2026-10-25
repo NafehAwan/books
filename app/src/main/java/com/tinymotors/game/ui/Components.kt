@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tinymotors.game.ui.theme.LocalBoardTheme
 import com.tinymotors.game.ui.theme.LocalReduceMotion
 import com.tinymotors.game.ui.theme.Palette
 import com.tinymotors.game.ui.theme.kidText
@@ -162,36 +163,45 @@ fun CountBadge(count: Int, modifier: Modifier = Modifier, color: Color = Palette
     }
 }
 
-/** Light sky with soft drifting clouds. */
+/** Sky (with clouds, or stars at night) and optional scenery, in the selected board theme. */
 @Composable
 fun SkyBackground(modifier: Modifier = Modifier, scenery: Boolean = false, groundFraction: Float = 0.86f) {
     val reduce = LocalReduceMotion.current
+    val theme = LocalBoardTheme.current
     val drift = if (reduce) {
         0f
     } else {
         val t = rememberInfiniteTransition(label = "clouds")
         t.animateFloat(0f, 1f, infiniteRepeatable(tween(90_000, easing = LinearEasing)), label = "drift").value
     }
-    val brush = remember { Brush.verticalGradient(listOf(Palette.SkyTop, Palette.SkyBottom)) }
+    val brush = remember(theme) { Brush.verticalGradient(listOf(theme.skyTop, theme.skyBottom)) }
     Canvas(modifier.fillMaxSize()) {
         drawRect(brush)
         val w = size.width
+        if (theme.stars) {
+            for (i in STARS.indices step 2) {
+                drawCircle(Color.White.copy(alpha = 0.8f), 1.6.dp.toPx(), Offset(STARS[i] * w, STARS[i + 1] * size.height * 0.6f))
+            }
+            drawCircle(Color(0xFFFFF3C4), w * 0.07f, Offset(w * 0.82f, size.height * 0.1f))
+        }
         val clouds = CLOUDS
         for (i in clouds.indices step 3) {
             val speed = 0.5f + (i % 2) * 0.5f
             val x = ((clouds[i] + drift * speed) % 1.2f - 0.1f) * w
             val y = clouds[i + 1] * size.height
             val s = clouds[i + 2] * w
-            drawCloud(Offset(x, y), s)
+            drawCloud(Offset(x, y), s, theme.cloud)
         }
-        if (scenery) drawScenery(size.height * groundFraction)
+        if (scenery) drawScenery(size.height * groundFraction, theme)
     }
 }
 
+private val STARS = floatArrayOf(0.05f, 0.1f, 0.18f, 0.3f, 0.3f, 0.08f, 0.42f, 0.22f, 0.55f, 0.05f, 0.63f, 0.33f, 0.71f, 0.15f, 0.9f, 0.28f, 0.95f, 0.06f, 0.12f, 0.45f, 0.36f, 0.5f, 0.6f, 0.47f, 0.84f, 0.52f)
+
 private val CLOUDS = floatArrayOf(0.1f, 0.08f, 0.22f, 0.7f, 0.18f, 0.18f, 0.4f, 0.42f, 0.16f, 0.95f, 0.66f, 0.2f, 0.25f, 0.86f, 0.15f)
 
-private fun DrawScope.drawCloud(c: Offset, s: Float) {
-    val col = Palette.Cloud.copy(alpha = 0.75f)
+private fun DrawScope.drawCloud(c: Offset, s: Float, color: Color) {
+    val col = color.copy(alpha = color.alpha * 0.75f)
     drawCircle(col, s * 0.32f, Offset(c.x, c.y))
     drawCircle(col, s * 0.24f, Offset(c.x - s * 0.32f, c.y + s * 0.08f))
     drawCircle(col, s * 0.26f, Offset(c.x + s * 0.32f, c.y + s * 0.06f))

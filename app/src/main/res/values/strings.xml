@@ -20,13 +20,11 @@
     <string name="garage">Garage</string>
 
     <!-- Game -->
-    <string name="score">Score</string>
+    <string name="best_label">Best %1$d</string>
     <string name="best">Best</string>
-    <string name="add_car">Add car</string>
     <string name="undo">Undo</string>
     <string name="combo">Combo x%1$d</string>
     <string name="plus_one_tow">+1 tow truck</string>
-    <string name="hint_board_full">Full! Match two cars.</string>
     <string name="hint_no_tows">No tow trucks left.</string>
     <string name="hint_no_undo">No undos left.</string>
     <string name="hint_match">Try these two!</string>
@@ -46,7 +44,7 @@
     <string name="keep_playing">Keep playing</string>
 
     <!-- Tutorial -->
-    <string name="tut_tap_add">Tap!</string>
+    <string name="tut_new_car">Every move brings a new car!</string>
     <string name="tut_collect">Find all 11 cars!</string>
     <string name="skip">Skip</string>
     <string name="ok">OK</string>
@@ -55,8 +53,8 @@
     <string name="gift_title">A present for you!</string>
     <string name="gift_opened">Hooray!</string>
     <string name="gift_tap">Tap the present</string>
-    <string name="gift_tow">+1 tow truck!</string>
-    <string name="gift_full">Your tow trucks are all ready!</string>
+    <string name="gift_tow">+1 tow truck and 25 coins!</string>
+    <string name="gift_full">+25 coins! Your tow trucks are all ready.</string>
 
     <!-- Garage sticker book -->
     <plurals name="garage_count">
@@ -73,7 +71,7 @@
     <string name="set_voice">Say car names</string>
     <string name="set_hints">Hints</string>
     <string name="start_over_done">All clean! Fresh start.</string>
-    <string name="privacy_note">Tiny Motors works offline and collects no data. No ads, no accounts, no purchases.</string>
+    <string name="privacy_note">Tiny Motors shows child-safe ads (Google AdMob, child-directed, no personalised ads). Coin packs and Remove ads are optional purchases behind a grown-up gate. Your game progress stays on this device.</string>
     <string name="credits">Font: Fredoka (SIL Open Font License). Sounds and music made for Tiny Motors.</string>
 
     <!-- Redesign -->
@@ -97,13 +95,63 @@
     <string name="parent_reset">Parent Reset</string>
     <string name="parent_reset_sub">Locked: hold 3 seconds to erase stickers and best score</string>
     <string name="have_fun">Have fun playing!</string>
-    <string name="about_badges">No ads · No data · Works offline</string>
+    <string name="about_badges">Child-safe ads · Grown-up gate for purchases · No accounts</string>
     <string name="new_car_unlocked">New Car Unlocked!</string>
+
+    <!-- Store, coins and ads -->
+    <string name="store">Store</string>
+    <string name="tab_themes">Themes</string>
+    <string name="tab_coins">Coins</string>
+    <string name="theme_park">Sunny Park</string>
+    <string name="theme_beach">Beach Day</string>
+    <string name="theme_snow">Snow Day</string>
+    <string name="theme_candy">Candy Land</string>
+    <string name="theme_night">Night Drive</string>
+    <string name="in_use">In use</string>
+    <string name="use_theme">Use</string>
+    <string name="free">Free</string>
+    <plurals name="need_more_coins">
+        <item quantity="one">Need %1$d more coin</item>
+        <item quantity="other">Need %1$d more coins</item>
+    </plurals>
+    <string name="theme_bought">New theme!</string>
+    <string name="earn_coins">Earn coins by merging cars!</string>
+    <string name="watch_ad">Watch an ad</string>
+    <plurals name="watch_ad_reward">
+        <item quantity="one">+%1$d coin</item>
+        <item quantity="other">+%1$d coins</item>
+    </plurals>
+    <plurals name="ads_left_today">
+        <item quantity="one">%1$d left today</item>
+        <item quantity="other">%1$d left today</item>
+    </plurals>
+    <string name="ads_none_left">Come back tomorrow for more</string>
+    <string name="ad_loading">Getting the video ready…</string>
+    <string name="ad_label">Ad</string>
+    <string name="coin_pack_small">Bag of coins</string>
+    <string name="coin_pack_medium">Box of coins</string>
+    <string name="coin_pack_large">Treasure chest</string>
+    <plurals name="coin_pack_amount">
+        <item quantity="one">%1$d coin</item>
+        <item quantity="other">%1$d coins</item>
+    </plurals>
+    <string name="remove_ads">Remove ads</string>
+    <string name="remove_ads_sub">No more banners. Videos stay optional.</string>
+    <string name="ads_removed">Ads removed. Thank you!</string>
+    <string name="for_grown_ups">For grown-ups</string>
+    <string name="price_unavailable">Not available</string>
+    <string name="store_unavailable">Purchases are not available right now.</string>
+    <string name="gate_title">Ask a grown-up</string>
+    <string name="gate_body">This costs real money. A grown-up can press and hold the button for 3 seconds.</string>
+    <string name="gate_hold">Hold for 3 seconds</string>
+    <string name="next_car">Next</string>
+    <string name="coins">Coins</string>
 
     <!-- Accessibility -->
     <string name="cd_gift">Daily present</string>
     <string name="cd_close">Close</string>
     <string name="cd_sound_toggle">Sound on or off</string>
+    <string name="cd_empty">Empty space</string>
     <string name="cd_home">Home</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_mascot">Towie the tow truck</string>
@@ -111,7 +159,6 @@
         <item quantity="one">Tow truck, %1$d left. Drag a car here to tow it away.</item>
         <item quantity="other">Tow truck, %1$d left. Drag a car here to tow it away.</item>
     </plurals>
-    <string name="cd_add_car">Add car. Next car: %1$s</string>
     <plurals name="cd_undo">
         <item quantity="one">Undo, %1$d left</item>
         <item quantity="other">Undo, %1$d left</item>

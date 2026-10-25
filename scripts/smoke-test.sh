@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Smoke test on a connected phone or emulator (adb must see exactly one device).
 #   scripts/smoke-test.sh [app-debug.apk] [output-dir]
-# Installs a fresh copy, then: launch -> daily gift -> Play -> Add car -> drag-merge -> tow ->
-# process death + resume -> Garage -> Settings -> random-tap stress test. Saves screenshots and
+# Installs a fresh copy, then: launch -> daily gift -> Play -> drag-merge -> move -> tow ->
+# fill the board -> process death + resume -> Store -> Garage -> Settings -> random-tap stress test. Saves screenshots and
 # fails if the app crashes or the game does not react.
 set -euo pipefail
 APK=${1:-app/build/outputs/apk/debug/app-debug.apk}
@@ -55,42 +55,56 @@ BEFORE=$(cars)
 echo "cars before: $BEFORE"
 if crashed; then echo "FAIL: the app crashed opening the game"; exit 1; fi
 test "$BEFORE" -eq 7 || { echo "FAIL: expected 7 starting cars"; exit 1; }
-tap "Add car"; sleep 2
-AFTER_ADD=$(cars)
-echo "cars after add: $AFTER_ADD"
-test "$AFTER_ADD" -eq 8 || { echo "FAIL: Add car did not add a car"; exit 1; }
-shot 05_after_add
 
+# Drag two matching cars together: they merge, and a new car drives in by itself.
 dump
+CITY_BEFORE=$(python3 "$HERE/smoke_ui.py" count "$OUT/ui.xml" "City hatch")
 read -r X1 Y1 X2 Y2 < <(python3 "$HERE/smoke_ui.py" pair "$OUT/ui.xml")
 echo "dragging $X1,$Y1 -> $X2,$Y2"
 adb shell input swipe "$X1" "$Y1" "$X2" "$Y2" 900
 sleep 2
-shot 06_after_merge
+shot 05_after_merge
 if has "OK"; then tap "OK"; sleep 1; fi   # the tutorial's last card covers the board
-shot 07_tutorial_done
-AFTER_MERGE=$(cars)
-echo "cars after merge: $AFTER_MERGE"
-test "$AFTER_MERGE" -eq 7 || { echo "FAIL: drag-merge did not merge"; exit 1; }
-
-# Tow: drag the first car onto the tow truck button.
+shot 06_tutorial_done
 dump
-read -r CX CY < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Kei car" || python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "City hatch")
+AFTER_MERGE=$(python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml")
+CITY_AFTER=$(python3 "$HERE/smoke_ui.py" count "$OUT/ui.xml" "City hatch")
+echo "cars after merge: $AFTER_MERGE (city hatch $CITY_BEFORE -> $CITY_AFTER)"
+test "$AFTER_MERGE" -eq 7 || { echo "FAIL: merge + new car should keep 7 cars"; exit 1; }
+test "$CITY_AFTER" -gt "$CITY_BEFORE" || { echo "FAIL: drag-merge did not merge"; exit 1; }
+
+# Move a car to an empty space: a new car arrives, so there is one more car.
+move_to_empty() {
+  dump
+  read -r CX CY < <(python3 "$HERE/smoke_ui.py" anycar "$OUT/ui.xml")
+  read -r EX EY < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Empty space") || return 1
+  adb shell input swipe "$CX" "$CY" "$EX" "$EY" 700
+  sleep 1.5
+}
+move_to_empty
+AFTER_MOVE=$(cars)
+echo "cars after move: $AFTER_MOVE"
+test "$AFTER_MOVE" -eq 8 || { echo "FAIL: a new car should arrive after a move"; exit 1; }
+shot 07_after_move
+
+# Tow: drag a car onto the tow truck button.
+dump
+read -r CX CY < <(python3 "$HERE/smoke_ui.py" anycar "$OUT/ui.xml")
 read -r TX TY < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Tow truck")
 adb shell input swipe "$CX" "$CY" "$TX" "$TY" 900
 sleep 2
 AFTER_TOW=$(cars)
 echo "cars after tow: $AFTER_TOW"
-test "$AFTER_TOW" -eq 6 || { echo "FAIL: tow did not remove a car"; exit 1; }
+test "$AFTER_TOW" -eq 7 || { echo "FAIL: tow did not remove a car"; exit 1; }
 shot 08_after_tow
 
-# Rapid taps on Add car until the board is full, then one more tap on a full board.
-dump
-read -r AX AY < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Add car")
-for i in $(seq 1 30); do adb shell input tap "$AX" "$AY"; done
-sleep 2
+# Keep moving cars into empty spaces until the board is full.
+for i in $(seq 1 40); do
+  if ! has "Empty space"; then break; fi
+  move_to_empty || break
+done
 FULL=$(cars)
-echo "cars after rapid taps: $FULL"
+echo "cars after filling: $FULL"
 test "$FULL" -eq 30 || { echo "FAIL: board should be full"; exit 1; }
 shot 09_full_board
 
@@ -108,9 +122,12 @@ test "$RESUMED" -eq 30 || { echo "FAIL: board not restored after process death";
 shot 10_resumed
 
 adb shell input keyevent KEYCODE_BACK; sleep 1
-tap "Garage"; sleep 2; shot 11_garage
+tap "Store"; sleep 2; shot 11_store_themes
+tap "Coins"; sleep 2; shot 12_store_coins
 adb shell input keyevent KEYCODE_BACK; sleep 1
-tap "Settings"; sleep 2; shot 12_settings
+tap "Garage"; sleep 2; shot 13_garage
+adb shell input keyevent KEYCODE_BACK; sleep 1
+tap "Settings"; sleep 2; shot 14_settings
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 # Animations back on, then a random-tap stress test inside the app.
@@ -120,13 +137,13 @@ adb shell settings put global animator_duration_scale 1
 adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/.MainActivity"
 sleep 3
-shot 13_home_animated
+shot 15_home_animated
 tap "Play" || true
 sleep 3
-shot 14_game_animated
+shot 16_game_animated
 adb shell monkey -p "$PKG" --pct-syskeys 0 --pct-appswitch 0 --throttle 60 -s 42 1500 >/dev/null 2>&1 || true
 sleep 2
-shot 15_after_monkey
+shot 17_after_monkey
 
 if crashed; then echo "FAIL: crash detected"; exit 1; fi
 echo "SMOKE TEST PASSED"

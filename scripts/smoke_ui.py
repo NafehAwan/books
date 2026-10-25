@@ -4,6 +4,8 @@
   smoke_ui.py center <xml> <content-desc>      -> "x y" of the first node whose description starts with it
   smoke_ui.py pair <xml>                         -> "x1 y1 x2 y2" of two board cars with the same name
   smoke_ui.py cars <xml>                         -> number of cars on the board
+  smoke_ui.py count <xml> <content-desc>         -> number of nodes with exactly that description
+  smoke_ui.py anycar <xml>                       -> "x y" of the first car on the board
 """
 import re
 import sys
@@ -35,6 +37,12 @@ def main():
     cars = [(d, c) for d, c in all_nodes if d in CARS]
     if cmd == "cars":
         print(len(cars))
+    elif cmd == "count":
+        print(sum(1 for d, _ in all_nodes if d == sys.argv[3]))
+    elif cmd == "anycar":
+        if not cars:
+            sys.exit("no cars")
+        print(*cars[0][1])
     elif cmd == "pair":
         seen = {}
         for d, c in cars:

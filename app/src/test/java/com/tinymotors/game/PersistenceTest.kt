@@ -27,6 +27,8 @@ class PersistenceTest {
     private fun playedGame(): GameEngine {
         val e = GameEngine(GameEngine.newGameState(2024))
         repeat(12) { e.addCar() }
+        e.addCoins(450)
+        e.buyTheme(1)
         e.findHintPair()?.let { (a, b) -> e.drag(a, b) }
         e.tow(e.state.board.indexOfFirst { it != null })
         return e
@@ -36,6 +38,16 @@ class PersistenceTest {
         val state = playedGame().state
         val decoded = GameStateCodec.decode(GameStateCodec.encode(state))
         assertEquals(state, decoded)
+    }
+
+    @Test fun `saves from before coins existed still load`() {
+        val old = GameStateCodec.encode(GameEngine.newGameState(9)).lineSequence()
+            .filterNot { it.startsWith("coins=") || it.startsWith("themes=") || it.startsWith("theme=") }
+            .joinToString("\n")
+        val decoded = GameStateCodec.decode(old)!!
+        assertEquals(0L, decoded.coins)
+        assertEquals(0, decoded.theme)
+        assertTrue(decoded.ownsTheme(0))
     }
 
     @Test fun `damaged or missing data decodes to null`() {

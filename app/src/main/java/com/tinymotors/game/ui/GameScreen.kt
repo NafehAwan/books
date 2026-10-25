@@ -51,6 +51,9 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.background
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -84,7 +87,6 @@ private class ScreenLayout {
     var root: LayoutCoordinates? = null
     var board: LayoutCoordinates? = null
     var tow: LayoutCoordinates? = null
-    var add: LayoutCoordinates? = null
 
     private fun rectOf(c: LayoutCoordinates?): Rect? {
         val r = root ?: return null
@@ -95,13 +97,13 @@ private class ScreenLayout {
 
     fun boardOrigin(): Offset = rectOf(board)?.topLeft ?: Offset.Zero
     fun towRect(): Rect? = rectOf(tow)
-    fun addRect(): Rect? = rectOf(add)
     fun size(): Size = root?.size?.let { Size(it.width.toFloat(), it.height.toFloat()) } ?: Size.Zero
 }
 
 /** Transient on-screen messages and flourishes. Tokens restart their animations. */
 data class Bubble(val text: String, val at: Offset, val token: Int)
 data class ComboPop(val count: Int, val at: Offset, val token: Int)
+data class CoinPop(val amount: Int, val at: Offset, val token: Int)
 data class Banner(val level: Int, val tow: Boolean, val token: Int)
 
 @Composable
@@ -127,16 +129,15 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
     val snapIds = remember { mutableStateOf(setOf<Int>()) }
     var bubble by remember { mutableStateOf<Bubble?>(null) }
     var comboPop by remember { mutableStateOf<ComboPop?>(null) }
+    var coinPop by remember { mutableStateOf<CoinPop?>(null) }
     var banner by remember { mutableStateOf<Banner?>(null) }
     var driveAcross by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var mood by remember { mutableStateOf(MascotMood.Idle) }
     var moodKey by remember { mutableIntStateOf(0) }
     var mascotSays by remember { mutableStateOf<String?>(null) }
     var hint by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    var addPulse by remember { mutableStateOf(false) }
     var inputTick by remember { mutableIntStateOf(0) }
     var tutorialStep by remember { mutableIntStateOf(0) }
-    var addShake by remember { mutableIntStateOf(0) }
 
     fun nextToken(): Int = ++fxToken
     fun slotCenterRoot(slot: Int): Offset = layout.boardOrigin() + geo.slotCenter(slot)
@@ -153,14 +154,8 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
     LaunchedEffect(Unit) {
         vm.effects.collect { e: Effects ->
             for (ev in e.events) when (ev) {
-                is GameEvent.CarAdded -> {
-                    fx[ev.car.id] = CarFx(FxKind.DriveIn, nextToken())
-                    if (tutorialStep == 0) tutorialStep = 1
-                }
-                GameEvent.BoardFull -> {
-                    addShake++
-                    say(res.getString(R.string.hint_board_full), MascotMood.Hint)
-                }
+                is GameEvent.CarAdded -> fx[ev.car.id] = CarFx(FxKind.DriveIn, nextToken())
+                GameEvent.BoardFull -> Unit
                 is GameEvent.Moved -> fx[ev.car.id] = CarFx(FxKind.Squash, nextToken())
                 is GameEvent.Swapped -> {
                     fx[ev.first.id] = CarFx(FxKind.Squash, nextToken())
@@ -175,8 +170,9 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                         particles.burst(at.x, at.y, art[ev.car.level].main, 14 + c * 6, geo.tile * (1.6f + c * 0.25f))
                     }
                     if (e.combo >= 2) comboPop = ComboPop(e.combo, at, nextToken())
+                    if (ev.coins > 0) coinPop = CoinPop(ev.coins, at, nextToken())
                     say(null, MascotMood.Cheer)
-                    if (tutorialStep == 1) tutorialStep = 2
+                    if (tutorialStep == 0) tutorialStep = 1
                 }
                 is GameEvent.NewCarUnlocked -> {
                     banner = Banner(ev.level, ev.towGranted, nextToken())
@@ -197,7 +193,8 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                     particles.clear()
                     say(null, MascotMood.Cheer)
                 }
-                is GameEvent.TowGifted, GameEvent.Undone -> Unit
+                is GameEvent.TowGifted, GameEvent.Undone, is GameEvent.CoinsAdded, is GameEvent.ThemeBought,
+                is GameEvent.ThemeSelected, is GameEvent.NotEnoughCoins -> Unit
             }
             // forget animation requests for cars that are gone
             val alive = vm.ui.value.game?.board?.mapNotNullTo(HashSet()) { it?.id }.orEmpty()
@@ -216,12 +213,10 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
     val dialogOpen = state.stuck || state.showWin
     LaunchedEffect(inputTick, state.settings.hints, dialogOpen, state.tutorialSeen) {
         hint = null
-        addPulse = false
         if (!state.settings.hints || dialogOpen || !state.tutorialSeen) return@LaunchedEffect
         delay(6000)
         val g = latest.game ?: return@LaunchedEffect
         hint = GameEngine(g).findHintPair()
-        addPulse = !g.isFull
         if (hint != null) say(res.getString(R.string.hint_match), MascotMood.Hint)
         else if (g.isFull && g.tows > 0) say(res.getString(R.string.hint_use_tow), MascotMood.Hint)
     }
@@ -376,11 +371,7 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
             Dock(
                 state = state,
                 dragging = drag,
-                addPulse = addPulse,
-                addShake = addShake,
                 onTowPlaced = { layout.tow = it },
-                onAddPlaced = { layout.add = it },
-                onAdd = { vm.addCar(SystemClock.uptimeMillis()) },
                 onUndo = {
                     snapIds.value = emptySet()
                     vm.undo()
@@ -432,6 +423,7 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
 
         bubble?.let { NameBubble(it) }
         comboPop?.let { ComboText(it) }
+        coinPop?.let { CoinText(it) }
         driveAcross?.let { (level, token) -> DriveAcross(level, token) { driveAcross = null } }
         banner?.let { NewCarBanner(it) { banner = null } }
 
@@ -443,7 +435,6 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                 game = game,
                 geo = geo,
                 boardOrigin = layout.boardOrigin(),
-                addRect = layout.addRect(),
                 onSkip = {
                     vm.completeTutorial()
                     vm.click()
@@ -478,12 +469,13 @@ private val PEEK_SPACE = 52.dp
 @Composable
 private fun TopBar(game: GameState, soundOn: Boolean, onHome: () -> Unit, onSound: () -> Unit) {
     val shown by animateFloatAsState(game.score.toFloat(), tween(450), label = "score")
+    val coins by animateFloatAsState(game.coins.toFloat(), tween(450), label = "coins")
     Row(Modifier.fillMaxWidth().widthIn(max = 520.dp), verticalAlignment = Alignment.CenterVertically) {
         WhiteIconButton(R.drawable.ui_home, stringResource(R.string.cd_home), onHome, size = 58.dp, iconSize = 34.dp)
         HSpace(8.dp)
-        StatPill(R.drawable.ui_star_small, stringResource(R.string.score), shown.toLong().toString(), Modifier.weight(1f))
+        StatPill(R.drawable.ui_star_small, stringResource(R.string.best_label, game.best), shown.toLong().toString(), Modifier.weight(1.15f))
         HSpace(8.dp)
-        StatPill(R.drawable.ui_crown, stringResource(R.string.best), game.best.toString(), Modifier.weight(1f))
+        StatPill(R.drawable.ui_coin, stringResource(R.string.coins), coins.toLong().toString(), Modifier.weight(1f))
         HSpace(8.dp)
         Box(Modifier.graphicsLayer { alpha = if (soundOn) 1f else 0.55f }) {
             WhiteIconButton(R.drawable.ui_sound, stringResource(R.string.cd_sound_toggle), onSound, size = 58.dp, iconSize = 32.dp)
@@ -523,11 +515,7 @@ private fun CarStrip(game: GameState, modifier: Modifier) {
 private fun Dock(
     state: UiState,
     dragging: DragInfo?,
-    addPulse: Boolean,
-    addShake: Int,
     onTowPlaced: (LayoutCoordinates) -> Unit,
-    onAddPlaced: (LayoutCoordinates) -> Unit,
-    onAdd: () -> Unit,
     onUndo: () -> Unit,
     onTowTap: () -> Unit,
     modifier: Modifier,
@@ -537,11 +525,6 @@ private fun Dock(
     val reduce = LocalReduceMotion.current
     val t = rememberInfiniteTransition(label = "dock")
     val bob = if (reduce) 0f else t.animateFloat(0f, 1f, infiniteRepeatable(tween(1800, easing = LinearEasing)), label = "bob").value
-    val pulse = if (reduce || !addPulse) 0f else t.animateFloat(0f, 1f, infiniteRepeatable(tween(1200), RepeatMode.Reverse), label = "pulse").value
-    val shake = remember { Animatable(0f) }
-    LaunchedEffect(addShake) {
-        if (addShake > 0 && !reduce) wiggle(shake, 6f)
-    }
     val towHot = dragging?.overTow == true
     val towScale by animateFloatAsState(if (towHot) 1.15f else if (dragging != null) 1.06f else 1f, spring(dampingRatio = 0.5f), label = "tow")
 
@@ -570,44 +553,31 @@ private fun Dock(
             CountBadge(game.tows, Modifier.align(Alignment.TopEnd), Palette.HeaderBlue)
         }
         HSpace(12.dp)
-        // Add car, with a preview of the next car
-        Box(
+        // The next car that will drive in after the child's move
+        val nextName = stringResource(art[state.nextLevel].nameRes)
+        val nextLabel = stringResource(R.string.next_car)
+        Panel(
             Modifier
                 .weight(1f)
-                .height(92.dp)
-                .onGloballyPositioned(onAddPlaced)
-                .graphicsLayer {
-                    translationY = sin(bob * 2 * PI).toFloat() * 3.dp.toPx()
-                    val s = 1f + pulse * 0.06f
-                    scaleX = s
-                    scaleY = s
-                    rotationZ = shake.value
-                },
+                .height(86.dp)
+                .semantics { contentDescription = "$nextLabel: $nextName" },
+            corner = 28.dp,
         ) {
-            ChunkyButton(
-                onClick = onAdd,
-                color = Palette.Orange,
-                shade = Palette.OrangeShade,
-                contentDescription = stringResource(R.string.cd_add_car, stringResource(art[state.nextLevel].nameRes)),
-                modifier = Modifier.fillMaxSize(),
-                shape = RoundedCornerShape(32.dp),
+            Row(
+                Modifier.fillMaxSize().background(Palette.Cream).padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    Art(R.drawable.ui_plus, Modifier.size(34.dp))
-                    HSpace(4.dp)
-                    OutlinedTitle(stringResource(R.string.add_car), size = 21f, outline = Palette.OrangeShade)
+                OutlinedTitle(nextLabel, size = 20f, fill = Palette.OrangeShade, outline = Color.White)
+                HSpace(10.dp)
+                Canvas(
+                    Modifier
+                        .size(64.dp)
+                        .graphicsLayer { translationY = sin(bob * 2 * PI).toFloat() * 3.dp.toPx() },
+                ) {
+                    drawCircle(Color.White)
+                    drawCar(art[state.nextLevel], Offset(-size.width * 0.04f, -size.height * 0.06f), Size(size.width * 1.08f, size.height * 1.08f))
                 }
-            }
-            // preview of the next car
-            Canvas(
-                Modifier
-                    .align(Alignment.TopStart)
-                    .offset(x = (-8).dp, y = (-12).dp)
-                    .size(48.dp),
-            ) {
-                drawCircle(Palette.OrangeShade, radius = size.minDimension / 2)
-                drawCircle(Color.White, radius = size.minDimension / 2 - 3.dp.toPx())
-                drawCar(art[state.nextLevel], Offset(-size.width * 0.04f, -size.height * 0.06f), Size(size.width * 1.08f, size.height * 1.08f), shadow = false)
             }
         }
         HSpace(12.dp)

@@ -93,8 +93,17 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth().widthIn(max = 560.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (game != null) StatPill(R.drawable.ui_crown, stringResource(R.string.best), game.best.toString())
-                Box(Modifier.weight(1f))
+                if (game != null) {
+                    StatPill(R.drawable.ui_crown, stringResource(R.string.best), game.best.toString(), Modifier.weight(1f))
+                    HSpace(6.dp)
+                    StatPill(
+                        R.drawable.ui_coin, stringResource(R.string.coins), game.coins.toString(),
+                        Modifier.weight(1f).clickable { vm.navigate(Screen.Store) },
+                    )
+                } else {
+                    Box(Modifier.weight(1f))
+                }
+                HSpace(8.dp)
                 WhiteIconButton(
                     R.drawable.ui_gift, stringResource(R.string.cd_gift),
                     onClick = {
@@ -127,24 +136,44 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
                 }
             }
             VSpace(16.dp)
-            ChunkyButton(
-                onClick = { vm.navigate(Screen.Garage) },
-                color = Palette.HeaderBlue,
-                shade = Palette.HeaderShade,
-                contentDescription = stringResource(R.string.garage),
-                modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth().height(80.dp),
-                shape = RoundedCornerShape(26.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Art(R.drawable.ui_garage, Modifier.size(42.dp))
-                    HSpace(12.dp)
-                    OutlinedTitle(stringResource(R.string.garage), size = 28f)
-                    if (game != null) {
-                        HSpace(10.dp)
-                        KidText("${game.unlockedCount}/${Cars.MAX_LEVEL}", size = 20f, color = Color.White.copy(alpha = 0.9f))
+            Row(Modifier.widthIn(max = 360.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ChunkyButton(
+                    onClick = { vm.navigate(Screen.Garage) },
+                    color = Palette.HeaderBlue,
+                    shade = Palette.HeaderShade,
+                    contentDescription = stringResource(R.string.garage),
+                    modifier = Modifier.weight(1f).height(80.dp),
+                    shape = RoundedCornerShape(26.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Art(R.drawable.ui_garage, Modifier.size(36.dp))
+                        HSpace(6.dp)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            OutlinedTitle(stringResource(R.string.garage), size = 20f)
+                            if (game != null) KidText("${game.unlockedCount}/${Cars.MAX_LEVEL}", size = 14f, color = Color.White.copy(alpha = 0.9f))
+                        }
+                    }
+                }
+                ChunkyButton(
+                    onClick = { vm.navigate(Screen.Store) },
+                    color = Palette.Orange,
+                    shade = Palette.OrangeShade,
+                    contentDescription = stringResource(R.string.store),
+                    modifier = Modifier.weight(1f).height(80.dp),
+                    shape = RoundedCornerShape(26.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(42.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
+                            Art(R.drawable.ui_store, Modifier.size(34.dp))
+                        }
+                        HSpace(6.dp)
+                        OutlinedTitle(stringResource(R.string.store), size = 20f, outline = Palette.OrangeShade)
                     }
                 }
             }
+        }
+        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.BottomCenter) {
+            BannerAd(vm, state)
         }
         if (showGift) {
             GiftDialog(
@@ -329,6 +358,7 @@ fun GarageScreen(state: UiState, vm: GameViewModel) {
                     VSpace(12.dp)
                 }
             }
+            BannerAd(vm, state)
         }
     }
 }

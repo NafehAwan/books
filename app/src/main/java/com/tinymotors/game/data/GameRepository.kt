@@ -17,6 +17,9 @@ data class SavedData(
     val settings: Settings,
     val giftDay: Int,
     val tutorialSeen: Boolean,
+    val adsRemoved: Boolean = false,
+    val rewardDay: Int = DailyGift.NEVER,
+    val rewardCount: Int = 0,
 )
 
 /** Reads and writes the game with Jetpack DataStore. Works on plain JVM too (used by unit tests). */
@@ -35,6 +38,9 @@ class GameRepository(private val store: DataStore<Preferences>) {
             ),
             giftDay = p[GIFT_DAY] ?: DailyGift.NEVER,
             tutorialSeen = p[TUTORIAL] ?: false,
+            adsRemoved = p[ADS_REMOVED] ?: false,
+            rewardDay = p[REWARD_DAY] ?: DailyGift.NEVER,
+            rewardCount = p[REWARD_COUNT] ?: 0,
         )
     }
 
@@ -61,7 +67,18 @@ class GameRepository(private val store: DataStore<Preferences>) {
         store.edit { it[TUTORIAL] = seen }
     }
 
-    /** Parent "Start over": wipes progress but keeps settings. */
+    suspend fun saveAdsRemoved(removed: Boolean) {
+        store.edit { it[ADS_REMOVED] = removed }
+    }
+
+    suspend fun saveRewardCount(day: Int, count: Int) {
+        store.edit {
+            it[REWARD_DAY] = day
+            it[REWARD_COUNT] = count
+        }
+    }
+
+    /** Parent "Start over": wipes progress but keeps settings and purchases. */
     suspend fun clearProgress() {
         store.edit {
             it.remove(GAME)
@@ -78,5 +95,8 @@ class GameRepository(private val store: DataStore<Preferences>) {
         val HINTS = booleanPreferencesKey("hints")
         val GIFT_DAY = intPreferencesKey("gift_day")
         val TUTORIAL = booleanPreferencesKey("tutorial_seen")
+        val ADS_REMOVED = booleanPreferencesKey("ads_removed")
+        val REWARD_DAY = intPreferencesKey("reward_day")
+        val REWARD_COUNT = intPreferencesKey("reward_count")
     }
 }

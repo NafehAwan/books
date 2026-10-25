@@ -5,6 +5,7 @@ import com.tinymotors.game.engine.GameEngine
 import com.tinymotors.game.engine.GameEvent
 import com.tinymotors.game.engine.GameRules
 import com.tinymotors.game.engine.Rng
+import com.tinymotors.game.engine.Shop
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -13,6 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GameEngineTest {
+
+    /** The original rules without automatic cars, so tests can check exact cells. */
+    private fun classic(s: com.tinymotors.game.engine.GameState) = GameEngine(s, autoSpawn = false)
 
     @Test fun `new game has seven cars, five level 1 and two level 2`() {
         val s = GameEngine.newGameState(seed = 1)
@@ -40,7 +44,7 @@ class GameEngineTest {
     }
 
     @Test fun `dragging onto an identical car merges into the next level`() {
-        val e = GameEngine(stateWith(listOf(1, 1)))
+        val e = classic(stateWith(listOf(1, 1)))
         val events = e.drag(0, 1)
         val merged = events.filterIsInstance<GameEvent.Merged>().single()
         assertEquals(2, merged.car.level)
@@ -52,7 +56,7 @@ class GameEngineTest {
     }
 
     @Test fun `dragging onto an empty slot moves the car`() {
-        val e = GameEngine(stateWith(listOf(3, 0)))
+        val e = classic(stateWith(listOf(3, 0)))
         val id = e.state.board[0]!!.id
         val events = e.drag(0, 1)
         assertTrue(events.single() is GameEvent.Moved)
@@ -62,7 +66,7 @@ class GameEngineTest {
     }
 
     @Test fun `dragging onto a different car swaps them`() {
-        val e = GameEngine(stateWith(listOf(1, 2)))
+        val e = classic(stateWith(listOf(1, 2)))
         val events = e.drag(0, 1)
         assertTrue(events.single() is GameEvent.Swapped)
         assertEquals(2, e.state.board[0]!!.level)
@@ -70,14 +74,14 @@ class GameEngineTest {
     }
 
     @Test fun `hypercars cannot merge, they swap instead`() {
-        val e = GameEngine(stateWith(listOf(11, 11), unlockedLevels = (1..11).toList()))
+        val e = classic(stateWith(listOf(11, 11), unlockedLevels = (1..11).toList()))
         val events = e.drag(0, 1)
         assertTrue(events.single() is GameEvent.Swapped)
         assertEquals(listOf(11, 11), e.state.board.take(2).map { it!!.level })
     }
 
     @Test fun `dropping on itself or from an empty slot does nothing`() {
-        val e = GameEngine(stateWith(listOf(1, 0)))
+        val e = classic(stateWith(listOf(1, 0)))
         val before = e.state
         assertTrue(e.drag(0, 0).isEmpty())
         assertTrue(e.drag(1, 0).isEmpty())
@@ -86,7 +90,7 @@ class GameEngineTest {
     }
 
     @Test fun `first time a level is reached grants a tow and an unlock event`() {
-        val e = GameEngine(stateWith(listOf(2, 2), tows = 3))
+        val e = classic(stateWith(listOf(2, 2), tows = 3))
         val events = e.drag(0, 1)
         val unlock = events.filterIsInstance<GameEvent.NewCarUnlocked>().single()
         assertEquals(3, unlock.level)
@@ -96,7 +100,7 @@ class GameEngineTest {
     }
 
     @Test fun `unlock reward only happens once and never above five tows`() {
-        val e = GameEngine(stateWith(listOf(2, 2, 2, 2), tows = 5))
+        val e = classic(stateWith(listOf(2, 2, 2, 2), tows = 5))
         val first = e.drag(0, 1)
         assertFalse(first.filterIsInstance<GameEvent.NewCarUnlocked>().single().towGranted)
         assertEquals(5, e.state.tows)
@@ -105,7 +109,7 @@ class GameEngineTest {
     }
 
     @Test fun `building the hypercar triggers the win once`() {
-        val e = GameEngine(stateWith(listOf(10, 10, 10, 10), unlockedLevels = (1..10).toList()))
+        val e = classic(stateWith(listOf(10, 10, 10, 10), unlockedLevels = (1..10).toList()))
         assertTrue(e.drag(0, 1).any { it is GameEvent.HypercarBuilt })
         assertTrue(e.state.hypercarBuilt)
         assertEquals(2048L, e.state.score)
@@ -113,11 +117,11 @@ class GameEngineTest {
     }
 
     @Test fun `add car fills a random empty slot and adds nothing on a full board`() {
-        val e = GameEngine(stateWith(listOf(1, 1)))
+        val e = classic(stateWith(listOf(1, 1)))
         val ev = e.addCar().filterIsInstance<GameEvent.CarAdded>().single()
         assertEquals(3, e.state.board.count { it != null })
         assertNotNull(e.state.board[ev.slot])
-        val full = GameEngine(stateWith(List(30) { 1 }))
+        val full = classic(stateWith(List(30) { 1 }))
         assertEquals(listOf(GameEvent.BoardFull), full.addCar())
         assertEquals(30, full.state.board.count { it != null })
     }
@@ -150,7 +154,7 @@ class GameEngineTest {
     }
 
     @Test fun `smart spawn copies the lowest level when no pair exists`() {
-        val e = GameEngine(stateWith(listOf(3, 5, 4, 11)))
+        val e = classic(stateWith(listOf(3, 5, 4, 11)))
         assertEquals(3, e.nextSpawnLevel)
         val added = e.addCar().filterIsInstance<GameEvent.CarAdded>().single()
         assertEquals(3, added.car.level)
@@ -172,17 +176,17 @@ class GameEngineTest {
 
     @Test fun `stuck means full, no pair and no tows`() {
         val noPairs = fullBoardNoPairs()
-        assertTrue(GameEngine(stateWith(noPairs, tows = 0)).isStuck)
-        assertFalse("tows left", GameEngine(stateWith(noPairs, tows = 1)).isStuck)
+        assertTrue(classic(stateWith(noPairs, tows = 0)).isStuck)
+        assertFalse("tows left", classic(stateWith(noPairs, tows = 1)).isStuck)
         val withPair = noPairs.toMutableList().also { it[1] = 1 }
-        assertFalse("pair exists", GameEngine(stateWith(withPair, tows = 0)).isStuck)
+        assertFalse("pair exists", classic(stateWith(withPair, tows = 0)).isStuck)
         val notFull = noPairs.toMutableList().also { it[29] = 0 }
-        assertFalse("space left", GameEngine(stateWith(notFull, tows = 0)).isStuck)
+        assertFalse("space left", classic(stateWith(notFull, tows = 0)).isStuck)
     }
 
     @Test fun `smart spawn keeps a full board mergeable`() {
         // Levels 1..10 once each plus Hypercars, one gap: smart spawn copies level 1, so a pair exists.
-        val e = GameEngine(stateWith(fullBoardNoPairs().toMutableList().also { it[29] = 0 }, tows = 0))
+        val e = classic(stateWith(fullBoardNoPairs().toMutableList().also { it[29] = 0 }, tows = 0))
         val events = e.addCar()
         assertTrue(e.state.isFull)
         assertFalse(events.contains(GameEvent.Stuck))
@@ -190,7 +194,7 @@ class GameEngineTest {
     }
 
     @Test fun `adding the last car onto a board of hypercars reports stuck`() {
-        val e = GameEngine(stateWith(List(29) { 11 } + 0, tows = 0, unlockedLevels = (1..11).toList()))
+        val e = classic(stateWith(List(29) { 11 } + 0, tows = 0, unlockedLevels = (1..11).toList()))
         val events = e.addCar()
         assertTrue(events.contains(GameEvent.Stuck))
         assertTrue(e.isStuck)
@@ -198,7 +202,7 @@ class GameEngineTest {
     }
 
     @Test fun `tow removes a car and costs one helper`() {
-        val e = GameEngine(stateWith(listOf(4, 1), tows = 2))
+        val e = classic(stateWith(listOf(4, 1), tows = 2))
         val events = e.tow(0)
         assertTrue(events.single() is GameEvent.Towed)
         assertNull(e.state.board[0])
@@ -206,14 +210,14 @@ class GameEngineTest {
     }
 
     @Test fun `tow with no helpers left does nothing`() {
-        val e = GameEngine(stateWith(listOf(4), tows = 0))
+        val e = classic(stateWith(listOf(4), tows = 0))
         assertEquals(listOf(GameEvent.NoTowsLeft), e.tow(0))
         assertNotNull(e.state.board[0])
         assertTrue(e.tow(5).isEmpty()) // empty slot
     }
 
     @Test fun `undo restores the board and is limited to three per game`() {
-        val e = GameEngine(stateWith(listOf(1, 1, 2, 2, 3, 3, 4, 4)))
+        val e = classic(stateWith(listOf(1, 1, 2, 2, 3, 3, 4, 4)))
         val start = e.state.board
         e.drag(0, 1)
         e.undo()
@@ -228,7 +232,7 @@ class GameEngineTest {
     }
 
     @Test fun `undo of a tow gives the tow back`() {
-        val e = GameEngine(stateWith(listOf(4), tows = 2))
+        val e = classic(stateWith(listOf(4), tows = 2))
         e.tow(0)
         e.undo()
         assertEquals(2, e.state.tows)
@@ -236,7 +240,7 @@ class GameEngineTest {
     }
 
     @Test fun `undo keeps an unlock reward`() {
-        val e = GameEngine(stateWith(listOf(2, 2), tows = 3))
+        val e = classic(stateWith(listOf(2, 2), tows = 3))
         e.drag(0, 1)
         assertEquals(4, e.state.tows)
         e.undo()
@@ -255,7 +259,7 @@ class GameEngineTest {
 
     @Test fun `helper tow truck removes the three lowest cars once per game`() {
         val board = fullBoardNoPairs()
-        val e = GameEngine(stateWith(board, tows = 0))
+        val e = classic(stateWith(board, tows = 0))
         assertTrue(e.canUseHelper)
         val ev = e.useHelper().single() as GameEvent.HelperTowed
         assertEquals(listOf(0, 1, 2), ev.slots) // levels 1, 2, 3
@@ -266,13 +270,13 @@ class GameEngineTest {
     }
 
     @Test fun `helper is only offered when stuck`() {
-        val e = GameEngine(stateWith(listOf(1, 1), tows = 0))
+        val e = classic(stateWith(listOf(1, 1), tows = 0))
         assertFalse(e.canUseHelper)
         assertTrue(e.useHelper().isEmpty())
     }
 
     @Test fun `new game keeps best score, unlocked cars and extra tows`() {
-        val e = GameEngine(stateWith(listOf(5, 5), tows = 5, unlockedLevels = (1..5).toList()))
+        val e = classic(stateWith(listOf(5, 5), tows = 5, unlockedLevels = (1..5).toList()))
         e.drag(0, 1)
         val best = e.state.best
         e.newGame(seed = 77)
@@ -286,16 +290,98 @@ class GameEngineTest {
     }
 
     @Test fun `gift adds a tow up to five`() {
-        val e = GameEngine(stateWith(listOf(1), tows = 4))
-        assertEquals(listOf(GameEvent.TowGifted(true)), e.giftTow())
+        val e = classic(stateWith(listOf(1), tows = 4))
+        assertEquals(listOf(GameEvent.TowGifted(true, GameRules.GIFT_COINS)), e.giftTow())
         assertEquals(5, e.state.tows)
-        assertEquals(listOf(GameEvent.TowGifted(false)), e.giftTow())
+        assertEquals(listOf(GameEvent.TowGifted(false, GameRules.GIFT_COINS)), e.giftTow())
+        assertEquals(GameRules.GIFT_COINS * 2L, e.state.coins)
         assertEquals(5, e.state.tows)
     }
 
     @Test fun `hint finds the lowest mergeable pair`() {
-        val e = GameEngine(stateWith(listOf(4, 2, 4, 2, 11, 11)))
+        val e = classic(stateWith(listOf(4, 2, 4, 2, 11, 11)))
         assertEquals(1 to 3, e.findHintPair())
-        assertNull(GameEngine(stateWith(listOf(11, 11, 3))).findHintPair())
+        assertNull(classic(stateWith(listOf(11, 11, 3))).findHintPair())
+    }
+
+    // ---------- automatic cars ----------
+
+    @Test fun `a new car drives in after every move`() {
+        val e = GameEngine(stateWith(listOf(3, 0)))
+        val events = e.drag(0, 1)
+        assertTrue(events[0] is GameEvent.Moved)
+        assertTrue(events[1] is GameEvent.CarAdded)
+        assertEquals(2, e.state.carCount)
+    }
+
+    @Test fun `a merge plus the new car keeps the number of cars`() {
+        val e = GameEngine(stateWith(listOf(1, 1, 4)))
+        e.drag(0, 1)
+        assertEquals(3, e.state.carCount)
+    }
+
+    @Test fun `undo takes back the move and the car that came with it`() {
+        val e = GameEngine(stateWith(listOf(1, 1, 4)))
+        val start = e.state.board
+        e.drag(0, 1)
+        e.undo()
+        assertEquals(start, e.state.board)
+    }
+
+    @Test fun `no new car when the board is full after a swap`() {
+        val full = List(30) { if (it % 2 == 0) 1 else 2 }
+        val e = GameEngine(stateWith(full))
+        val events = e.drag(0, 1)
+        assertTrue(events.none { it is GameEvent.CarAdded })
+        assertEquals(30, e.state.carCount)
+    }
+
+    @Test fun `towing never leaves fewer than two cars`() {
+        val e = GameEngine(stateWith(listOf(3, 5), tows = 2))
+        val events = e.tow(0)
+        assertTrue(events.any { it is GameEvent.CarAdded })
+        assertEquals(2, e.state.carCount)
+    }
+
+    // ---------- coins and themes ----------
+
+    @Test fun `merges pay coins and firsts pay a bonus`() {
+        val e = classic(stateWith(listOf(1, 1, 2, 2)))
+        val first = e.drag(0, 1).filterIsInstance<GameEvent.Merged>().single()
+        assertEquals(2, first.coins) // level 2 already unlocked
+        val second = e.drag(2, 3).filterIsInstance<GameEvent.Merged>().single()
+        assertEquals(3 + GameRules.UNLOCK_COINS, second.coins) // first Retro bug
+        assertEquals(2L + 3 + GameRules.UNLOCK_COINS, e.state.coins)
+    }
+
+    @Test fun `building the hypercar pays the big bonus`() {
+        val e = classic(stateWith(listOf(10, 10), unlockedLevels = (1..10).toList()))
+        val m = e.drag(0, 1).filterIsInstance<GameEvent.Merged>().single()
+        assertEquals(11 + GameRules.UNLOCK_COINS + GameRules.HYPERCAR_COINS, m.coins)
+    }
+
+    @Test fun `themes cost coins and can be switched once owned`() {
+        val e = classic(stateWith(listOf(1)))
+        val price = Shop.THEME_PRICES[1].toLong()
+        assertEquals(listOf(GameEvent.NotEnoughCoins(price)), e.buyTheme(1))
+        e.addCoins(price.toInt() + 5)
+        assertEquals(listOf(GameEvent.ThemeBought(1)), e.buyTheme(1))
+        assertEquals(5L, e.state.coins)
+        assertEquals(1, e.state.theme)
+        assertEquals(listOf(GameEvent.ThemeSelected(0)), e.buyTheme(0))
+        assertEquals(listOf(GameEvent.ThemeSelected(1)), e.buyTheme(1)) // owned: free switch
+        assertEquals(5L, e.state.coins)
+        assertTrue(e.selectTheme(4).isEmpty()) // not owned
+        assertTrue(e.buyTheme(99).isEmpty())
+    }
+
+    @Test fun `coins and themes survive a new game`() {
+        val e = classic(stateWith(listOf(1)))
+        e.addCoins(1000)
+        e.buyTheme(2)
+        e.newGame(seed = 3)
+        assertEquals(1000L - Shop.THEME_PRICES[2], e.state.coins)
+        assertTrue(e.state.ownsTheme(2))
+        assertEquals(2, e.state.theme)
     }
 }

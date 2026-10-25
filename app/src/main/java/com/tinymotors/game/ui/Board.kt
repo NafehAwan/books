@@ -78,19 +78,20 @@ fun Board(
     onPlaced: (LayoutCoordinates) -> Unit,
 ) {
     val art = LocalCarArt.current
+    val theme = com.tinymotors.game.ui.theme.LocalBoardTheme.current
     val density = LocalDensity.current
     val wDp = with(density) { geo.width.toDp() }
     val hDp = with(density) { geo.height.toDp() }
     Box(Modifier.size(wDp, hDp).onGloballyPositioned(onPlaced)) {
         Canvas(Modifier.size(wDp, hDp)) {
             val r = CornerRadius(geo.tile * 0.2f)
-            drawRoundRect(Palette.PanelShade, Offset(0f, 4f * density.density), Size(geo.width, geo.height), CornerRadius(20f * density.density))
-            drawRoundRect(Palette.Panel, Offset.Zero, Size(geo.width, geo.height), CornerRadius(20f * density.density))
+            drawRoundRect(theme.panelShade, Offset(0f, 4f * density.density), Size(geo.width, geo.height), CornerRadius(20f * density.density))
+            drawRoundRect(theme.panel, Offset.Zero, Size(geo.width, geo.height), CornerRadius(20f * density.density))
             val dragLevel = drag?.car?.level
             for (i in 0 until GameRules.SLOTS) {
                 val tl = geo.slotTopLeft(i)
-                drawRoundRect(Palette.SlotEdge, tl + Offset(0f, 2f * density.density), Size(geo.tile, geo.tile), r)
-                drawRoundRect(Palette.Slot, tl, Size(geo.tile, geo.tile), r)
+                drawRoundRect(theme.slotEdge, tl + Offset(0f, 2f * density.density), Size(geo.tile, geo.tile), r)
+                drawRoundRect(theme.slot, tl, Size(geo.tile, geo.tile), r)
                 if (drag != null && i != drag.fromSlot) {
                     val here = board[i]
                     val isMatch = here != null && here.level == dragLevel && Cars.canMerge(here.level)
@@ -109,6 +110,19 @@ fun Board(
                         drawDashedSlot(Palette.InkSoft.copy(alpha = 0.6f), tl, Size(geo.tile, geo.tile), 2f * density.density)
                     }
                 }
+            }
+        }
+        val emptyLabel = androidx.compose.ui.res.stringResource(com.tinymotors.game.R.string.cd_empty)
+        val tileDp = with(density) { geo.tile.toDp() }
+        for (i in 0 until GameRules.SLOTS) {
+            if (board[i] == null) {
+                val tl = geo.slotTopLeft(i)
+                Box(
+                    Modifier
+                        .offset { IntOffset(tl.x.roundToInt(), tl.y.roundToInt()) }
+                        .size(tileDp)
+                        .semantics { contentDescription = emptyLabel },
+                )
             }
         }
         for (i in 0 until GameRules.SLOTS) {

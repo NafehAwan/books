@@ -18,6 +18,8 @@ import com.tinymotors.game.engine.DailyGift
 import com.tinymotors.game.engine.GameEngine
 import com.tinymotors.game.engine.GameEvent
 import com.tinymotors.game.engine.GameState
+import com.tinymotors.game.monetize.AdsManager
+import com.tinymotors.game.monetize.BillingManager
 import com.tinymotors.game.ui.CarArt
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -32,7 +34,7 @@ import java.util.Calendar
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "tiny_motors")
 
-enum class Screen { Home, Game, Garage, Settings }
+enum class Screen { Home, Game, Garage, Settings, Store }
 
 data class UiState(
     val loaded: Boolean = false,
@@ -46,7 +48,15 @@ data class UiState(
     val giftAvailable: Boolean = false,
     val tutorialSeen: Boolean = true,
     val showWin: Boolean = false,
+    val adsRemoved: Boolean = false,
+    val rewardedReady: Boolean = false,
+    val adsLeftToday: Int = REWARDS_PER_DAY,
+    val prices: Map<String, String> = emptyMap(),
 )
+
+/** Reward videos per calendar day, and coins per video. */
+const val REWARDS_PER_DAY = 5
+const val REWARD_COINS = 50
 
 /** A batch of game events for the UI to animate, with the current combo count. */
 data class Effects(val events: List<GameEvent>, val combo: Int = 1)
@@ -57,12 +67,25 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     val art = CarArt(app)
 
     private val repo = GameRepository(app.dataStore)
+    val ads = AdsManager(app)
+    private val billing = BillingManager(
+        app,
+        onCoins = { amount ->
+            sound.play(Sfx.Gift)
+            emit(engine.addCoins(amount))
+        },
+        onAdsRemoved = {
+            if (!_ui.value.adsRemoved) viewModelScope.launch { repo.saveAdsRemoved(true) }
+            _ui.update { it.copy(adsRemoved = true) }
+        },
+    )
+    private var rewardDay = DailyGift.NEVER
+    private var rewardCount = 0
     private val sound = SoundManager(app)
     private val speaker = Speaker(app)
     private val combo = ComboTracker()
     private var engine = GameEngine(GameEngine.newGameState(System.nanoTime()))
     private var giftDay = DailyGift.NEVER
-    private var lastAddAt = 0L
     private val saveQueue = Channel<GameState>(Channel.CONFLATED)
 
     private val _ui = MutableStateFlow(UiState(screen = saved.get<String>(KEY_SCREEN)?.let { Screen.valueOf(it) } ?: Screen.Home))
@@ -76,6 +99,8 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
             val data = repo.load()
             data.game?.let { engine = GameEngine(it) }
             giftDay = data.giftDay
+            rewardDay = data.rewardDay
+            rewardCount = data.rewardCount
             applySettings(data.settings)
             _ui.update {
                 it.copy(
@@ -84,6 +109,8 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
                     tutorialSeen = data.tutorialSeen,
                     giftAvailable = DailyGift.isAvailable(giftDay, today()),
                     showWin = saved.get<Boolean>(KEY_WIN) ?: false,
+                    adsRemoved = data.adsRemoved,
+                    adsLeftToday = adsLeft(),
                 )
             }
             publish(save = data.game == null)
@@ -91,6 +118,8 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
         viewModelScope.launch {
             for (state in saveQueue) repo.saveGame(state)
         }
+        viewModelScope.launch { ads.rewardedReady.collect { r -> _ui.update { it.copy(rewardedReady = r) } } }
+        viewModelScope.launch { billing.prices.collect { p -> _ui.update { it.copy(prices = p) } } }
     }
 
     // ---------- navigation ----------
@@ -117,26 +146,13 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
 
     // ---------- game actions ----------
 
-    fun addCar(nowMillis: Long) {
-        if (nowMillis - lastAddAt < ADD_DEBOUNCE_MS) return
-        lastAddAt = nowMillis
-        val events = engine.addCar()
-        events.forEach {
-            when (it) {
-                is GameEvent.CarAdded -> sound.play(Sfx.Brum, 0.8f)
-                GameEvent.BoardFull -> sound.play(Sfx.Tap, 0.8f)
-                else -> Unit
-            }
-        }
-        emit(events)
-    }
-
     fun drag(from: Int, to: Int, nowMillis: Long) {
         val events = engine.drag(from, to)
         var comboCount = 1
         for (e in events) {
             when (e) {
                 is GameEvent.Moved, is GameEvent.Swapped -> sound.play(Sfx.Drop, 0.8f)
+                is GameEvent.CarAdded -> later(250) { sound.play(Sfx.Brum, 0.7f) }
                 is GameEvent.Merged -> {
                     comboCount = combo.onMerge(nowMillis)
                     sound.play(Sfx.merge(e.car.level))
@@ -214,6 +230,48 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
         emit(events)
     }
 
+    // ---------- store, coins and ads ----------
+
+    /** Buys a board theme with coins, or switches to it if already owned. */
+    fun buyTheme(id: Int): List<GameEvent> {
+        val events = engine.buyTheme(id)
+        when (events.firstOrNull()) {
+            is GameEvent.ThemeBought -> sound.play(Sfx.Unlock)
+            is GameEvent.ThemeSelected -> click()
+            is GameEvent.NotEnoughCoins -> sound.play(Sfx.Tap)
+            else -> Unit
+        }
+        emit(events)
+        return events
+    }
+
+    /** Child chose to watch a reward video (at most [REWARDS_PER_DAY] a day). */
+    fun watchAd(activity: android.app.Activity) {
+        if (adsLeft() <= 0 || !_ui.value.rewardedReady) return
+        sound.onBackground()
+        ads.showRewarded(
+            activity,
+            onReward = {
+                val day = today()
+                if (rewardDay != day) {
+                    rewardDay = day
+                    rewardCount = 0
+                }
+                rewardCount++
+                viewModelScope.launch { repo.saveRewardCount(rewardDay, rewardCount) }
+                _ui.update { it.copy(adsLeftToday = adsLeft()) }
+                emit(engine.addCoins(REWARD_COINS))
+                later(400) { sound.play(Sfx.Gift) }
+            },
+            onClosed = { sound.onForeground() },
+        )
+    }
+
+    /** A grown-up passed the gate: open Google Play for [productId]. Returns false if not available. */
+    fun buyProduct(activity: android.app.Activity, productId: String): Boolean = billing.buy(activity, productId)
+
+    private fun adsLeft(): Int = if (rewardDay == today()) (REWARDS_PER_DAY - rewardCount).coerceAtLeast(0) else REWARDS_PER_DAY
+
     fun completeTutorial() {
         _ui.update { it.copy(tutorialSeen = true) }
         viewModelScope.launch { repo.saveTutorialSeen(true) }
@@ -252,7 +310,9 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
 
     fun onForeground() {
         sound.onForeground()
-        _ui.update { it.copy(giftAvailable = it.loaded && DailyGift.isAvailable(giftDay, today())) }
+        ads.start()
+        billing.start()
+        _ui.update { it.copy(giftAvailable = it.loaded && DailyGift.isAvailable(giftDay, today()), adsLeftToday = adsLeft()) }
     }
 
     fun onBackground() {
@@ -261,6 +321,7 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     }
 
     override fun onCleared() {
+        billing.end()
         sound.release()
         speaker.release()
     }
@@ -302,6 +363,5 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     private companion object {
         const val KEY_SCREEN = "screen"
         const val KEY_WIN = "win"
-        const val ADD_DEBOUNCE_MS = 90L
     }
 }

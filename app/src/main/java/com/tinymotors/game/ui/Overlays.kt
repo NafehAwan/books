@@ -120,6 +120,28 @@ fun ComboText(c: ComboPop) {
 }
 
 @Composable
+fun CoinText(c: CoinPop) {
+    val reduce = LocalReduceMotion.current
+    val t = remember(c.token) { Animatable(0f) }
+    LaunchedEffect(c.token) { t.animateTo(1f, tween(1000, easing = LinearEasing)) }
+    val density = LocalDensity.current
+    Box(
+        Modifier
+            .centerAt { c.at + Offset(0f, with(density) { (if (reduce) 0.dp else (-10 - 40 * t.value).dp).toPx() }) }
+            .graphicsLayer { alpha = 1f - ((t.value - 0.6f) / 0.4f).coerceIn(0f, 1f) },
+    ) {
+        Row(
+            Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.92f)).padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Art(R.drawable.ui_coin, Modifier.size(20.dp))
+            HSpace(3.dp)
+            KidText("+${c.amount}", size = 16f, color = Palette.OrangeShade)
+        }
+    }
+}
+
+@Composable
 fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
     val density = LocalDensity.current
     Box(
@@ -301,7 +323,6 @@ fun Tutorial(
     game: GameState,
     geo: BoardGeo,
     boardOrigin: Offset,
-    addRect: Rect?,
     onSkip: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -314,22 +335,7 @@ fun Tutorial(
 
     Box(Modifier.fillMaxSize()) {
         when {
-            step == 0 || (step == 1 && pair == null) -> if (addRect != null) {
-                val press = abs(sin(p * 2 * PI)).toFloat()
-                Box(Modifier.centerAt { addRect.center + Offset(addRect.width * 0.18f, addRect.height * 0.55f + press * 10f * density.density) }) {
-                    Canvas(Modifier.size(64.dp)) { KidIcons.finger(this, Color(0xFFFFD9B8), Palette.Ink) }
-                }
-                Box(Modifier.centerAt { Offset(addRect.center.x, addRect.top - 44f * density.density) }) {
-                    Panel(corner = 16.dp) {
-                        Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Canvas(Modifier.size(26.dp)) { KidIcons.plus(this, Palette.OrangeShade) }
-                            HSpace(6.dp)
-                            KidText(stringResource(R.string.tut_tap_add), size = 20f)
-                        }
-                    }
-                }
-            }
-            step == 1 && pair != null -> {
+            step == 0 && pair != null -> {
                 val a = boardOrigin + geo.slotCenter(pair.first)
                 val b = boardOrigin + geo.slotCenter(pair.second)
                 val k = ((p - 0.15f) / 0.6f).coerceIn(0f, 1f)
@@ -357,7 +363,7 @@ fun Tutorial(
                 }
             }
         }
-        if (step >= 2) {
+        if (step >= 1) {
             FullScrim {
                 DialogCard {
                     Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -367,6 +373,8 @@ fun Tutorial(
                             Art(R.drawable.ui_star_small, Modifier.size(40.dp))
                         }
                         VSpace(8.dp)
+                        KidText(stringResource(R.string.tut_new_car), size = 18f, color = Palette.InkSoft)
+                        VSpace(4.dp)
                         OutlinedTitle(stringResource(R.string.tut_collect), size = 26f, fill = Palette.HeaderBlue, outline = Color.White)
                         VSpace(16.dp)
                         ChunkyButton(onDone, Palette.Green, Palette.GreenShade, stringResource(R.string.ok), Modifier.size(120.dp, 72.dp)) {
