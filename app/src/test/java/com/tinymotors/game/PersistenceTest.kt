@@ -6,6 +6,7 @@ import com.tinymotors.game.data.Settings
 import com.tinymotors.game.engine.GameEngine
 import com.tinymotors.game.engine.GameStateCodec
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -18,6 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class PersistenceTest {
 
     @get:Rule val tmp = TemporaryFolder()

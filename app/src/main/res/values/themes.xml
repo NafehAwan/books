@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TinyMotors" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/sky</item>
+    </style>
+
+    <!-- Android 12+ splash screen (back-ported by androidx.core:core-splashscreen). -->
+    <style name="Theme.TinyMotors.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/sky</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_car</item>
+        <item name="postSplashScreenTheme">@style/Theme.TinyMotors</item>
+    </style>
+</resources>
