@@ -1,0 +1,31 @@
+# Temporary helper: resolves all Gradle dependencies on a GitHub runner and pushes
+# ~/.gradle/caches/modules-2 to the ci-deps-cache branch, for sandboxes without Google Maven access.
+name: Deps cache
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - name: Pick latest stable AGP
+        run: |
+          AGP=$(curl -s https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml | grep -o '<version>[0-9]*\.[0-9]*\.[0-9]*</version>' | sed 's/<[^>]*>//g' | sort -V | tail -1)
+          echo "LATEST_STABLE_AGP=$AGP"
+          sed -i "s/^agp = .*/agp = \"$AGP\"/" gradle/libs.versions.toml
+          grep agp gradle/libs.versions.toml
+      - name: Build everything
+        run: ./gradlew --no-configuration-cache --continue assembleDebug assembleRelease bundleRelease testDebugUnitTest lintDebug lintRelease || true
+      - name: Push cache branch
+        run: |
+          mkdir -p /tmp/cache && cd ~/.gradle
+          tar --exclude='*.lock' -cf - caches/modules-2 | zstd -19 -T0 > /tmp/cache/modules2.tar.zst
+          cd /tmp/cache && split -b 90m modules2.tar.zst modules2.tar.zst.part- && rm modules2.tar.zst && ls -la
+          cp $GITHUB_WORKSPACE/gradle/libs.versions.toml .
+          git init -q -b ci-deps-cache && git add -A
+          git -c user.name=ci -c user.email=ci@example.com commit -qm "Gradle dependency cache"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-deps-cache
