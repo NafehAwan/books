@@ -102,5 +102,5 @@ Check it against Google's current AdMob guidance before you submit
 1. Home screen with the logo, Towy and the driving cars (`store/screenshots/1_home.png`).
 2. Game board mid-play with several car levels (`2_game.png`).
 3. The Garage sticker book (`3_garage.png`).
-4. The Store with board themes.
+4. The Store with board themes (`4_store_themes.png`).
 5. A "New car!" ribbon and the Hypercar celebration.

@@ -190,9 +190,11 @@ checked on the device only; there is no server-side receipt check.
   coins), damaged saves, and a real DataStore round trip that simulates process death.
 * **Lint:** no issues in debug or release.
 * **Emulator (Android 14, Pixel 6 profile, in GitHub Actions):** `scripts/smoke-test.sh` passed:
-  launch, daily gift, Play, Add car, drag-merge, tutorial, tow, 30 rapid Add car taps until the
-  board was full (plus taps on the full board), process death and resume with the same board,
-  back button, Garage, Settings, and 1500 random taps with animations on, with no crash.
+  launch, daily gift (+25 coins), Play, drag-merge (7 cars stay 7 because a new car arrives; City
+  hatches 2 → 3), tutorial, move to an empty space (7 → 8), tow (8 → 7), moving cars until the
+  board was full (30), process death and resume with the same board, back button, Store (Themes
+  and Coins tabs; the test reward video loaded), Garage with a test banner, Settings, and 1500
+  random taps with animations on, with no app crash.
 * **APK checks:** release APK is about 4.7 MB (AAB 8.4 MB), targets SDK 36. Permissions:
   INTERNET, ACCESS_NETWORK_STATE, WAKE_LOCK and FOREGROUND_SERVICE (needed by AdMob) and
   BILLING (Google Play); the advertising ID and Privacy Sandbox ad permissions are removed.
