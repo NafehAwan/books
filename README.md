@@ -94,10 +94,13 @@ app/src/main/java/com/tinymotors/game/
   ui/          Compose screens (Home, Game, Garage, Settings), board, mascot, particles, overlays
   GameViewModel.kt, MainActivity.kt
 app/src/test/  Unit tests (JUnit, no device needed)
-app/src/main/res/drawable-nodpi/car_01_kei.webp … car_11_hypercar.webp   the 11 cut-out cars
+app/src/main/res/drawable-nodpi/car_01_kei.webp … car_11_hypercar.webp   the 11 cut-out toy cars
+app/src/main/res/drawable-nodpi/ui_*.webp   icons, Towy the mascot, logo and win badge cut from the designs
 app/src/main/res/raw/        generated sound effects and music (OGG)
-art-source/car_sheet.webp    the original car picture sheet
-tools/process_art.py         sheet → 11 transparent cars, tile colours, launcher icon, splash
+art-source/ui/               the design mock-ups (icon sheet, game design, screens)
+art-source/car_sheet.webp    the first car sheet (kept for reference)
+tools/process_art.py         toy cars → 11 transparent cars, tile colours, launcher icon, splash
+tools/process_ui_art.py      icons, Towy, logo and badge cut from the mock-ups
 tools/make_audio.py          synthesises every sound and the music loop (NumPy + wave)
 tools/make_font.py           static Fredoka font files from the OFL variable font
 tools/make_store_art.py      Play feature graphic
@@ -109,19 +112,22 @@ scripts/                     make-keystore.sh, smoke-test.sh
 ### Re-generating the assets
 
 ```bash
-pip install pillow numpy opencv-python-headless fonttools
-python3 tools/process_art.py     # cars, car_colors.xml, icons, splash, previews in tools/out/
+pip install pillow numpy opencv-python-headless fonttools "rembg[cpu]"
+python3 tools/process_art.py     # cars, car_colors.xml, launcher icon, splash, previews in tools/out/
+python3 tools/process_ui_art.py  # icons, Towy, logo, win badge
 python3 tools/make_audio.py      # needs ffmpeg for OGG (falls back to WAV without it)
 python3 tools/make_font.py
 python3 tools/make_store_art.py
 ```
 
-`tools/process_art.py` finds the 11 cars on the sheet (left to right, top to bottom), crops each
-one, removes edge fringe (nearest-solid-colour bleed, 1 px erode and feather), centres it on a
-512 × 512 canvas at 88 % width and saves WebP. It samples each car's paint colour (door area only,
-so blue windows do not count) for the tile tint and edge. The Hypercar tile is dark navy. Preview
-sheets on white, dark and sky backgrounds are written to `tools/out/` for checking. The ground
-shadow is drawn by the app at runtime.
+`tools/process_art.py` cuts the 11 toy cars from `art-source/ui/icons_sheet.png` with the rembg
+segmentation model, removes the soft blue ground shadow baked into the mock-up, fills any window
+the model mistook for background, de-fringes the edges, centres each car on a 448 × 448 canvas at
+88 % width and saves WebP. It samples each car's paint colour (door area only) for the tile tint
+and edge; the Hypercar tile is dark navy. Run it with `CAR_SOURCE=sheet` to use the first car sheet
+instead. `tools/process_ui_art.py` keys icons off their flat button faces and uses rembg for Towy,
+the logo and the win badge. Preview sheets on white, dark and sky backgrounds go to `tools/out/`.
+The ground shadow under every car is drawn by the app at runtime.
 
 ## What has been tested
 
@@ -142,9 +148,21 @@ shadow is drawn by the app at runtime.
 
 ## Choices I made where the brief left room
 
-* **Car pictures:** all 11 pictures on the sheet were usable (the sheet already had a transparent
-  background), so no placeholders were needed. The app still has a drawn placeholder car in case a
-  picture ever fails to decode.
+* **Car pictures:** the game uses the toy-style cars from your design icon sheet, in this order:
+  red Kei car, blue City hatch, yellow Retro bug, green Sedan, purple Estate, blue SUV, orange
+  Pickup, pink Coupe, teal Sports car, blue Supercar, purple Hypercar (the order of their shapes
+  on the sheet). All 11 cut out cleanly. The first car sheet is kept in `art-source/`. The app
+  still has a drawn placeholder car in case a picture ever fails to decode.
+* **Design mock-ups:** Towy, the logo, icons, header pills, tabbed settings, the collection book,
+  the purple "New car" ribbon and the "2048!" badge follow your designs. Hills, trees and flowers
+  are drawn in code so they stay sharp on every screen size. The pictures come from 1536 px
+  mock-ups, so they are a little soft at large sizes; separate high-resolution files would look
+  sharper.
+* **No Store:** the Store screen in the mock-up (coins, "Get 750", buying cars and themes) is not
+  built. Your brief rules out purchases and manipulative rewards, and Google Play's Families policy
+  is strict about virtual currency for children. Every car is earned by merging.
+* **Towy's moods** use the expression pictures: smiling when idle (with a quick blink), laughing
+  on merges, surprised when stuck, and squinting with joy while dancing on a win.
 * **Spawn odds after the SUV:** level 3 is 7 %, level 2 stays at 15 %, level 1 is 78 %.
 * **Smart spawn** ignores Hypercars and only applies when there is at least one other car. Because
   of it, a full board almost always contains a matching pair, so "Garage is full!" is rare.
