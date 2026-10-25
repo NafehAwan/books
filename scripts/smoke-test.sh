@@ -21,10 +21,18 @@ dump() {
   done
   echo "uiautomator dump failed"; return 1
 }
-tap() { dump; read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1"); adb shell input tap "$X" "$Y"; echo "tap '$1' at $X,$Y"; }
-has() { dump; python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1" >/dev/null 2>&1; }
-cars() { dump; python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml"; }
-crashed() { adb logcat -d | grep -E "FATAL EXCEPTION|ANR in $PKG" ; }
+# Emulators sometimes show "<system app> isn't responding"; that is not our app, so tap Wait.
+dismiss_anr() {
+  if adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell cat /sdcard/ui.xml | grep -q "isn't responding"; then
+    adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null
+    read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Wait") && adb shell input tap "$X" "$Y"
+    echo "dismissed a system 'not responding' dialog"; sleep 2
+  fi
+}
+tap() { dismiss_anr; dump; read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1"); adb shell input tap "$X" "$Y"; echo "tap '$1' at $X,$Y"; }
+has() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1" >/dev/null 2>&1; }
+cars() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml"; }
+crashed() { adb logcat -d | grep -E "FATAL EXCEPTION: .*|ANR in $PKG" | grep -E "$PKG|FATAL EXCEPTION: main" ; }
 
 adb wait-for-device
 adb install -r "$APK"

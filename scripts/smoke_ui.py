@@ -15,7 +15,7 @@ CARS = ["Kei car", "City hatch", "Retro bug", "Sedan", "Estate", "SUV", "Pickup"
 
 def nodes(path):
     for n in ET.parse(path).iter("node"):
-        desc = n.get("content-desc") or ""
+        desc = n.get("content-desc") or n.get("text") or ""
         m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", n.get("bounds", ""))
         if m:
             x1, y1, x2, y2 = map(int, m.groups())
