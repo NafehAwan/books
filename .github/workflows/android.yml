@@ -1,0 +1,20 @@
+name: Android
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print latest versions
+        run: |
+          for p in com/android/tools/build/gradle androidx/compose/compose-bom androidx/activity/activity-compose \
+                   androidx/datastore/datastore-preferences androidx/core/core-splashscreen androidx/core/core-ktx \
+                   androidx/lifecycle/lifecycle-runtime-compose androidx/lifecycle/lifecycle-viewmodel-compose \
+                   androidx/test/ext/junit androidx/test/espresso/espresso-core androidx/navigation/navigation-compose; do
+            echo "== $p"; curl -s https://dl.google.com/dl/android/maven2/$p/maven-metadata.xml | grep -o '<version>[^<]*</version>' | tail -n 12 | tr '\n' ' '; echo
+          done
+          for p in org/jetbrains/kotlin/kotlin-gradle-plugin org/jetbrains/kotlin/plugin/compose/org.jetbrains.kotlin.plugin.compose.gradle.plugin org/robolectric/robolectric; do
+            echo "== $p"; curl -s https://repo.maven.apache.org/maven2/$p/maven-metadata.xml | grep -o '<version>[^<]*</version>' | tail -n 8 | tr '\n' ' '; echo
+          done
+          ls $ANDROID_HOME/platforms $ANDROID_HOME/build-tools; java -version
