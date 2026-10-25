@@ -10,6 +10,8 @@ OUT=${2:-smoke-out}
 PKG=com.tinymotors.game
 HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$OUT"
+# Always keep the device log, so a failure shows its cause.
+trap 'adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true' EXIT
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "screenshot $1"; }
 dump() {
@@ -43,6 +45,7 @@ shot 04_game_tutorial
 
 BEFORE=$(cars)
 echo "cars before: $BEFORE"
+if crashed; then echo "FAIL: the app crashed opening the game"; exit 1; fi
 test "$BEFORE" -eq 7 || { echo "FAIL: expected 7 starting cars"; exit 1; }
 tap "Add car"; sleep 2
 AFTER_ADD=$(cars)
@@ -117,6 +120,5 @@ adb shell monkey -p "$PKG" --pct-syskeys 0 --pct-appswitch 0 --throttle 60 -s 42
 sleep 2
 shot 15_after_monkey
 
-if crashed; then echo "FAIL: crash detected"; adb logcat -d > "$OUT/logcat.txt"; exit 1; fi
-adb logcat -d > "$OUT/logcat.txt"
+if crashed; then echo "FAIL: crash detected"; exit 1; fi
 echo "SMOKE TEST PASSED"

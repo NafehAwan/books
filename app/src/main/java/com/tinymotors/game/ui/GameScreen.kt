@@ -361,7 +361,7 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                     // Towy peeks over the top edge of the board
                     Mascot(
                         mood, moodKey, stringResource(R.string.cd_mascot),
-                        Modifier.align(Alignment.TopEnd).padding(top = PEEK_SPACE - 58.dp, end = 10.dp),
+                        Modifier.align(Alignment.TopEnd).offset(x = (-10).dp, y = (-18).dp),
                         size = 92.dp,
                         pose = MascotPose.Peek,
                     )
