@@ -56,11 +56,11 @@ echo "dragging $X1,$Y1 -> $X2,$Y2"
 adb shell input swipe "$X1" "$Y1" "$X2" "$Y2" 900
 sleep 2
 shot 06_after_merge
+if has "OK"; then tap "OK"; sleep 1; fi   # the tutorial's last card covers the board
+shot 07_tutorial_done
 AFTER_MERGE=$(cars)
 echo "cars after merge: $AFTER_MERGE"
 test "$AFTER_MERGE" -eq 7 || { echo "FAIL: drag-merge did not merge"; exit 1; }
-if has "OK"; then tap "OK"; sleep 1; fi   # tutorial finished card
-shot 07_tutorial_done
 
 # Tow: drag the first car onto the tow truck button.
 dump

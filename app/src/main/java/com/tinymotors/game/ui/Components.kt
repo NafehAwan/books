@@ -87,6 +87,7 @@ fun ChunkyButton(
                 role = Role.Button
             }
             .clickable(source, indication = null, enabled = enabled, onClick = onClick),
+        propagateMinConstraints = true,
     ) {
         Box(
             Modifier
@@ -95,9 +96,9 @@ fun ChunkyButton(
                 .clip(shape)
                 .background(base),
         )
+        // The face sizes the button: it fills fixed-size buttons and wraps its content otherwise.
         Box(
             Modifier
-                .matchParentSize()
                 .padding(bottom = depth)
                 .offset { androidx.compose.ui.unit.IntOffset(0, sink.roundToPx()) }
                 .clip(shape)

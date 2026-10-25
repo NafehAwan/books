@@ -64,6 +64,15 @@ fun Modifier.centerAt(at: () -> Offset): Modifier = layout { measurable, constra
     }
 }
 
+/** Places the content with its top-centre at a point given in the parent's coordinates. */
+fun Modifier.topCenterAt(at: () -> Offset): Modifier = layout { measurable, constraints ->
+    val p = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
+    layout(p.width, p.height) {
+        val o = at()
+        p.place((o.x - p.width / 2f).roundToInt(), o.y.roundToInt())
+    }
+}
+
 @Composable
 fun NameBubble(b: Bubble) {
     val a = remember(b.token) { Animatable(0f) }
@@ -320,8 +329,8 @@ fun Tutorial(
                 Box(Modifier.centerAt { at + Offset(geo.tile * 0.15f, geo.tile * 0.35f) }) {
                     Canvas(Modifier.size(60.dp)) { KidIcons.finger(this, Color(0xFFFFD9B8), Palette.Ink) }
                 }
-                // car + car = next car
-                Box(Modifier.centerAt { Offset(boardOrigin.x + geo.width / 2, boardOrigin.y - 6f * density.density) }) {
+                // car + car = next car, just below the board
+                Box(Modifier.topCenterAt { Offset(boardOrigin.x + geo.width / 2, boardOrigin.y + geo.height + 6f * density.density) }) {
                     Panel(corner = 16.dp) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Canvas(Modifier.size(52.dp)) { drawCar(look, Offset.Zero, size, shadow = false) }
