@@ -28,7 +28,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -323,7 +327,7 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                 }
             },
     ) {
-        SkyBackground()
+        SkyBackground(scenery = true, groundFraction = 0.93f)
         Column(
             Modifier
                 .fillMaxSize()
@@ -331,18 +335,42 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            TopBar(game, mood, moodKey, mascotSays, onHome = { vm.navigate(Screen.Home) })
+            TopBar(
+                game = game,
+                soundOn = state.settings.sound || state.settings.music,
+                onHome = { vm.navigate(Screen.Home) },
+                onSound = {
+                    val on = !(state.settings.sound || state.settings.music)
+                    vm.updateSettings(state.settings.copy(sound = on, music = on))
+                },
+            )
             VSpace(8.dp)
             CarStrip(game, Modifier.widthIn(max = 480.dp))
-            VSpace(10.dp)
-            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
                 val pad = with(density) { 10.dp.toPx() }
                 val gap = with(density) { 8.dp.toPx() }
+                val peek = with(density) { PEEK_SPACE.toPx() }
                 val w = minOf(constraints.maxWidth.toFloat(), with(density) { 480.dp.toPx() })
-                val h = constraints.maxHeight.toFloat()
+                val h = constraints.maxHeight.toFloat() - peek
                 val tile = minOf((w - pad * 2 - gap * 4) / 5f, (h - pad * 2 - gap * 5) / 6f)
                 if (geo.tile != tile) geo = BoardGeo(tile, gap, pad)
-                Board(game.board, geo, drag, hint, fx, snapIds.value, measurer) { layout.board = it }
+                Box(Modifier.width(with(density) { geo.width.toDp() })) {
+                    Box(Modifier.padding(top = PEEK_SPACE)) {
+                        Board(game.board, geo, drag, hint, fx, snapIds.value, measurer) { layout.board = it }
+                    }
+                    // Towy peeks over the top edge of the board
+                    Mascot(
+                        mood, moodKey, stringResource(R.string.cd_mascot),
+                        Modifier.align(Alignment.TopEnd).padding(top = PEEK_SPACE - 58.dp, end = 10.dp),
+                        size = 92.dp,
+                        pose = MascotPose.Peek,
+                    )
+                    if (mascotSays != null) {
+                        Box(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 104.dp)) {
+                            SpeechBubble(mascotSays!!, Modifier.align(Alignment.TopEnd))
+                        }
+                    }
+                }
             }
             VSpace(12.dp)
             Dock(
@@ -445,29 +473,25 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
     }
 }
 
-@Composable
-private fun TopBar(game: GameState, mood: MascotMood, moodKey: Int, says: String?, onHome: () -> Unit) {
-    Row(Modifier.fillMaxWidth().widthIn(max = 520.dp).zIndex(1f), verticalAlignment = Alignment.CenterVertically) {
-        RoundIconButton(onHome, stringResource(R.string.cd_home)) { c -> KidIcons.home(this, c) }
-        HSpace(8.dp)
-        ScorePanel(stringResource(R.string.score), game.score, Modifier.weight(1f))
-        HSpace(8.dp)
-        ScorePanel(stringResource(R.string.best), game.best, Modifier.weight(1f))
-        HSpace(4.dp)
-        Box {
-            Mascot(mood, moodKey, stringResource(R.string.cd_mascot), size = 72.dp)
-            if (says != null) SpeechBubble(says, Modifier.align(Alignment.BottomEnd))
-        }
-    }
-}
+private val PEEK_SPACE = 52.dp
 
 @Composable
-private fun ScorePanel(label: String, value: Long, modifier: Modifier) {
-    val shown by animateFloatAsState(value.toFloat(), tween(450), label = "score")
-    Panel(modifier.height(62.dp), corner = 18.dp) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            KidText(label, size = 13f, color = Palette.InkSoft, bold = false)
-            KidText(shown.toLong().toString(), size = 22f)
+private fun TopBar(game: GameState, soundOn: Boolean, onHome: () -> Unit, onSound: () -> Unit) {
+    val shown by animateFloatAsState(game.score.toFloat(), tween(450), label = "score")
+    Row(Modifier.fillMaxWidth().widthIn(max = 520.dp), verticalAlignment = Alignment.CenterVertically) {
+        WhiteIconButton(R.drawable.ui_home, stringResource(R.string.cd_home), onHome, size = 58.dp, iconSize = 34.dp)
+        HSpace(8.dp)
+        StatPill(R.drawable.ui_star_small, stringResource(R.string.score), shown.toLong().toString(), Modifier.weight(1f))
+        HSpace(8.dp)
+        StatPill(R.drawable.ui_crown, stringResource(R.string.best), game.best.toString(), Modifier.weight(1f))
+        HSpace(8.dp)
+        Box(Modifier.graphicsLayer { alpha = if (soundOn) 1f else 0.55f }) {
+            WhiteIconButton(R.drawable.ui_sound, stringResource(R.string.cd_sound_toggle), onSound, size = 58.dp, iconSize = 32.dp)
+            if (!soundOn) {
+                Canvas(Modifier.size(58.dp).padding(14.dp)) {
+                    drawLine(Palette.PinkShade, Offset(0f, size.height), Offset(size.width, 0f), 5.dp.toPx(), androidx.compose.ui.graphics.StrokeCap.Round)
+                }
+            }
         }
     }
 }
@@ -522,7 +546,7 @@ private fun Dock(
     val towScale by animateFloatAsState(if (towHot) 1.15f else if (dragging != null) 1.06f else 1f, spring(dampingRatio = 0.5f), label = "tow")
 
     Row(modifier.fillMaxWidth().height(96.dp), verticalAlignment = Alignment.CenterVertically) {
-        // Tow
+        // Tow truck: drop a car here
         Box(
             Modifier
                 .size(84.dp)
@@ -534,18 +558,19 @@ private fun Dock(
         ) {
             ChunkyButton(
                 onClick = onTowTap,
-                color = if (towHot) TowGlow else Palette.Blue,
-                shade = Palette.BlueShade,
+                color = if (towHot) TowGlow else Color.White,
+                shade = Palette.ButtonShade,
                 contentDescription = pluralStringResource(R.plurals.cd_tow, game.tows, game.tows),
                 modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(26.dp),
                 enabled = game.tows > 0 || dragging != null,
             ) {
-                Canvas(Modifier.size(40.dp)) { KidIcons.hook(this, androidx.compose.ui.graphics.Color.White) }
+                Art(R.drawable.ui_tow, Modifier.size(56.dp))
             }
-            CountBadge(game.tows, Modifier.align(Alignment.TopEnd), Palette.BlueShade)
+            CountBadge(game.tows, Modifier.align(Alignment.TopEnd), Palette.HeaderBlue)
         }
         HSpace(12.dp)
-        // Add car
+        // Add car, with a preview of the next car
         Box(
             Modifier
                 .weight(1f)
@@ -565,26 +590,24 @@ private fun Dock(
                 shade = Palette.OrangeShade,
                 contentDescription = stringResource(R.string.cd_add_car, stringResource(art[state.nextLevel].nameRes)),
                 modifier = Modifier.fillMaxSize(),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(32.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    Box(
-                        Modifier
-                            .size(62.dp)
-                            .graphicsLayer { clip = false },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Canvas(Modifier.size(56.dp)) {
-                            drawCircle(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f))
-                            drawCar(art[state.nextLevel], Offset(-size.width * 0.08f, -size.height * 0.05f), Size(size.width * 1.16f, size.height * 1.16f), shadow = false)
-                        }
-                    }
-                    HSpace(8.dp)
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Canvas(Modifier.size(20.dp)) { KidIcons.plus(this, androidx.compose.ui.graphics.Color.White) }
-                        KidText(stringResource(R.string.add_car), size = 20f, color = androidx.compose.ui.graphics.Color.White)
-                    }
+                    Art(R.drawable.ui_plus, Modifier.size(34.dp))
+                    HSpace(4.dp)
+                    OutlinedTitle(stringResource(R.string.add_car), size = 21f, outline = Palette.OrangeShade)
                 }
+            }
+            // preview of the next car
+            Canvas(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = (-8).dp, y = (-12).dp)
+                    .size(48.dp),
+            ) {
+                drawCircle(Palette.OrangeShade, radius = size.minDimension / 2)
+                drawCircle(Color.White, radius = size.minDimension / 2 - 3.dp.toPx())
+                drawCar(art[state.nextLevel], Offset(-size.width * 0.04f, -size.height * 0.06f), Size(size.width * 1.08f, size.height * 1.08f), shadow = false)
             }
         }
         HSpace(12.dp)
@@ -592,15 +615,16 @@ private fun Dock(
         Box(Modifier.size(84.dp)) {
             ChunkyButton(
                 onClick = onUndo,
-                color = Palette.Purple,
-                shade = Palette.PurpleShade,
+                color = Color.White,
+                shade = Palette.ButtonShade,
                 contentDescription = pluralStringResource(R.plurals.cd_undo, game.undosLeft, game.undosLeft),
                 modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(26.dp),
                 enabled = state.canUndo,
             ) {
-                Canvas(Modifier.size(40.dp)) { KidIcons.undo(this, androidx.compose.ui.graphics.Color.White) }
+                Canvas(Modifier.size(44.dp)) { KidIcons.undo(this, Palette.HeaderBlue) }
             }
-            CountBadge(game.undosLeft, Modifier.align(Alignment.TopEnd), Palette.PurpleShade)
+            CountBadge(game.undosLeft, Modifier.align(Alignment.TopEnd), Palette.Purple)
         }
     }
 }

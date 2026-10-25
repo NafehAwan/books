@@ -38,6 +38,24 @@ object Palette {
     val GreyShade = Color(0xFF8E9BB0)
     val Gold = Color(0xFFFFC83D)
     val Locked = Color(0xFF3A4660)
+
+    // From the design mock-ups
+    val HeaderBlue = Color(0xFF3F7FEA)
+    val HeaderShade = Color(0xFF2A5BC2)
+    val Toggle = Color(0xFF4A8DF2)
+    val Glass = Color(0xFFF3F8FF)
+    val GlassEdge = Color(0xFFD6E6FA)
+    val ButtonShade = Color(0xFFBFD5F2)
+    val Cream = Color(0xFFFFF3DA)
+    val CreamShade = Color(0xFFEBD3A6)
+    val Ribbon = Color(0xFF8B6CF0)
+    val RibbonShade = Color(0xFF6A4BD0)
+    val Hill = Color(0xFF8FD27A)
+    val HillFar = Color(0xFFB5E3A0)
+    val Tree = Color(0xFF5DBB63)
+    val TreeDark = Color(0xFF45A04F)
+    val Trunk = Color(0xFFA87A55)
+    val Road = Color(0xFFB9C3CF)
 }
 
 val Fredoka = FontFamily(

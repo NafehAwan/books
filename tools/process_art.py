@@ -22,7 +22,16 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# The game uses the toy-style cars from the design icon sheet. The first car sheet
+# (art-source/car_sheet.webp) is kept for reference; set CAR_SOURCE=sheet to use it instead.
 SHEET = os.path.join(ROOT, "art-source", "car_sheet.webp")
+TOY_SHEET = os.path.join(ROOT, "art-source", "ui", "icons_sheet.png")
+# Boxes of the 11 toy cars on the icon sheet, in ladder order.
+TOY_BOXES = [
+    (32, 578, 242, 742), (248, 578, 452, 738), (462, 578, 662, 734), (672, 578, 878, 734),
+    (886, 574, 1094, 734), (1100, 572, 1308, 738), (1312, 578, 1512, 738),
+    (32, 772, 258, 928), (270, 766, 504, 924), (516, 766, 760, 924), (770, 756, 1036, 928),
+]
 RES = os.path.join(ROOT, "app", "src", "main", "res")
 OUT = os.path.join(ROOT, "tools", "out")
 
@@ -30,7 +39,7 @@ NAMES = [
     "kei", "city_hatch", "retro_bug", "sedan", "estate", "suv",
     "pickup", "coupe", "sports_car", "supercar", "hypercar",
 ]
-CANVAS = 512
+CANVAS = 448
 CAR_WIDTH_FRACTION = 0.88
 ICON_CAR = 0  # Kei car: the friendliest face for the launcher icon
 SKY_TOP = (0xBF, 0xE6, 0xFF)
@@ -68,6 +77,47 @@ def find_cars(rgba: np.ndarray) -> list[np.ndarray]:
             rows.append([i])
     ordered = [i for row in rows for i in sorted(row, key=lambda j: cents[j][0])]
     return [masks[i] for i in ordered]
+
+
+def toy_cars() -> list[np.ndarray]:
+    """Cuts each toy car off the light-blue design background with rembg."""
+    from rembg import new_session, remove
+
+    session = new_session("isnet-general-use")
+    sheet = Image.open(TOY_SHEET).convert("RGB")
+    out = []
+    for box in TOY_BOXES:
+        crop = sheet.crop(box)
+        crop = crop.resize((crop.width * 2, crop.height * 2), Image.LANCZOS)
+        rgba = np.array(remove(crop, session=session, post_process_mask=True))
+        alpha = rgba[..., 3].astype(np.float32)
+        # The mock-up bakes a soft blue ground shadow under each car; the game draws its own.
+        rgb = rgba[..., :3].astype(np.int32)
+        r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+        h = alpha.shape[0]
+        rows = np.arange(h)[:, None] > h * 0.72
+        shadowy = rows & (alpha < 235) & (b > r + 10) & (b > g) & ((rgb.max(axis=2) - rgb.min(axis=2)) < 90)
+        alpha[shadowy] = 0
+        alpha = np.clip((alpha - 20) * 255.0 / 235.0, 0, 255)
+        # keep only the car itself (largest shape), dropping neighbours and specks
+        mask = (alpha > 40).astype(np.uint8)
+        n, lab, st, _ = cv2.connectedComponentsWithStats(mask, 8)
+        if n > 2:
+            biggest = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+            for i in range(1, n):
+                if i != biggest and st[i, cv2.CC_STAT_AREA] < st[biggest, cv2.CC_STAT_AREA] * 0.08:
+                    alpha[lab == i] = 0
+        # Windows can be mistaken for background: fill every hole that is fully enclosed by the car.
+        solid = (alpha > 128).astype(np.uint8)
+        flood = solid.copy()
+        ff = np.zeros((flood.shape[0] + 2, flood.shape[1] + 2), np.uint8)
+        cv2.floodFill(flood, ff, (0, 0), 1)
+        holes = flood == 0
+        alpha[holes] = 255
+        rgba[..., :3][holes] = np.array(crop)[holes]
+        rgba[..., 3] = alpha.astype(np.uint8)
+        out.append(rgba)
+    return out
 
 
 def clean_cutout(rgba: np.ndarray, mask: np.ndarray) -> np.ndarray:
@@ -270,9 +320,11 @@ def write_icons(car: np.ndarray) -> None:
 def main() -> None:
     os.makedirs(os.path.join(RES, "drawable-nodpi"), exist_ok=True)
     os.makedirs(os.path.join(RES, "values"), exist_ok=True)
-    sheet = load_sheet()
-    masks = find_cars(sheet)
-    cutouts = [clean_cutout(sheet, m) for m in masks]
+    if os.environ.get("CAR_SOURCE") == "sheet":
+        sheet = load_sheet()
+        cutouts = [clean_cutout(sheet, m) for m in find_cars(sheet)]
+    else:
+        cutouts = [clean_cutout(c, c[..., 3] > 8) for c in toy_cars()]
     canvases = []
     for i, (name, car) in enumerate(zip(NAMES, cutouts)):
         img = place_on_canvas(car)

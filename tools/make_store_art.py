@@ -6,14 +6,12 @@ Output: store/feature_graphic_1024x500.png
 """
 import os
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARS = os.path.join(ROOT, "app", "src", "main", "res", "drawable-nodpi")
-FONT = os.path.join(ROOT, "app", "src", "main", "res", "font", "fredoka_bold.ttf")
 OUT = os.path.join(ROOT, "store")
 W, H = 1024, 500
-COLOURS = [(255, 166, 43), (255, 123, 172), (69, 173, 247), (76, 208, 125), (160, 132, 240)]
 
 
 def car(i: int, width: int) -> Image.Image:
@@ -39,27 +37,16 @@ def main() -> None:
     d.rectangle([0, 420, W, 426], fill=(156, 196, 138))
     canvas = bg.convert("RGBA")
 
-    # title with letter colours, like the app
-    font = ImageFont.truetype(FONT, 120)
-    text = "Tiny Motors"
-    x = (W - d.textlength(text, font=font)) / 2
-    shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(shadow)
-    cx = x
-    for ch in text:
-        sd.text((cx, 48 + 8), ch, font=font, fill=(43, 58, 85, 70))
-        cx += sd.textlength(ch, font=font)
-    canvas.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(3)))
-    td = ImageDraw.Draw(canvas)
-    k = 0
-    for ch in text:
-        if ch != " ":
-            td.text((x, 48), ch, font=font, fill=COLOURS[k % len(COLOURS)] + (255,), stroke_width=6, stroke_fill=(255, 255, 255, 255))
-            k += 1
-        x += td.textlength(ch, font=font)
+    # the logo and Towy from the design sheets (tools/process_ui_art.py)
+    logo = Image.open(os.path.join(CARS, "ui_logo.webp")).convert("RGBA")
+    logo = logo.resize((440, int(logo.height * 440 / logo.width)), Image.LANCZOS)
+    canvas.alpha_composite(logo, ((W - logo.width) // 2 - 90, 6))
+    towy = Image.open(os.path.join(CARS, "ui_towy_front.webp")).convert("RGBA")
+    towy = towy.resize((200, int(towy.height * 200 / towy.width)), Image.LANCZOS)
+    canvas.alpha_composite(towy, (W - 300, 30))
 
     # a parade of cars from small to big
-    lineup = [(1, 150), (3, 165), (6, 185), (9, 200), (11, 235)]
+    lineup = [(1, 150), (3, 160), (7, 175), (9, 185), (11, 205)]
     total = sum(w for _, w in lineup) + 18 * (len(lineup) - 1)
     px = (W - total) // 2
     for level, width in lineup:

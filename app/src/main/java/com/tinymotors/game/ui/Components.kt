@@ -118,22 +118,6 @@ fun ChunkyButton(
     }
 }
 
-/** Round icon button (home, settings, close). */
-@Composable
-fun RoundIconButton(
-    onClick: () -> Unit,
-    contentDescription: String,
-    modifier: Modifier = Modifier,
-    color: Color = Palette.Panel,
-    shade: Color = Palette.PanelShade,
-    iconColor: Color = Palette.Ink,
-    icon: DrawScope.(Color) -> Unit,
-) {
-    ChunkyButton(onClick, color, shade, contentDescription, modifier.size(60.dp), CircleShape, depth = 5.dp) {
-        Canvas(Modifier.size(28.dp)) { icon(iconColor) }
-    }
-}
-
 @Composable
 fun KidText(
     text: String,
@@ -180,7 +164,7 @@ fun CountBadge(count: Int, modifier: Modifier = Modifier, color: Color = Palette
 
 /** Light sky with soft drifting clouds. */
 @Composable
-fun SkyBackground(modifier: Modifier = Modifier) {
+fun SkyBackground(modifier: Modifier = Modifier, scenery: Boolean = false, groundFraction: Float = 0.86f) {
     val reduce = LocalReduceMotion.current
     val drift = if (reduce) {
         0f
@@ -200,6 +184,7 @@ fun SkyBackground(modifier: Modifier = Modifier) {
             val s = clouds[i + 2] * w
             drawCloud(Offset(x, y), s)
         }
+        if (scenery) drawScenery(size.height * groundFraction)
     }
 }
 
@@ -213,42 +198,6 @@ private fun DrawScope.drawCloud(c: Offset, s: Float) {
     drawRoundRect(col, Offset(c.x - s * 0.55f, c.y + s * 0.02f), Size(s * 1.1f, s * 0.28f), CornerRadius(s * 0.14f))
 }
 
-/** Pill switch for settings. */
-@Composable
-fun KidSwitch(checked: Boolean, label: String, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    val knob by animateDpAsState(if (checked) 30.dp else 0.dp, spring(dampingRatio = 0.6f), label = "knob")
-    Row(
-        modifier
-            .fillMaxWidth()
-            .defaultMinSize(minHeight = 64.dp)
-            .semantics(mergeDescendants = true) {
-                role = Role.Switch
-                contentDescription = label
-            }
-            .clickable { onChange(!checked) }
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        KidText(label, Modifier.weight(1f), size = 20f, bold = false, align = androidx.compose.ui.text.style.TextAlign.Start)
-        Box(
-            Modifier
-                .width(66.dp)
-                .height(36.dp)
-                .clip(CircleShape)
-                .background(if (checked) Palette.Green else Palette.Grey)
-                .padding(3.dp),
-        ) {
-            Box(
-                Modifier
-                    .offset { androidx.compose.ui.unit.IntOffset(knob.roundToPx(), 0) }
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(Color.White),
-            )
-        }
-    }
-}
-
 @Composable
 fun VSpace(h: Dp) = Spacer(Modifier.height(h))
 
@@ -260,16 +209,16 @@ fun DrawScope.drawCar(look: CarLook, topLeft: Offset, boxSize: Size, alpha: Floa
     val w = boxSize.width
     val h = boxSize.height
     if (shadow) {
-        // The car art fills ~88% of the width and sits in the middle of its square; wheels are ~70% down.
+        // The car art fills ~88% of the width and sits in the middle of its square; wheels are ~80% down.
         val sw = w * 0.74f
-        val sh = h * 0.12f
+        val sh = h * 0.1f
         drawOval(
             Brush.radialGradient(
                 listOf(Color(0x552B3A55), Color(0x002B3A55)),
-                center = Offset(topLeft.x + w / 2, topLeft.y + h * 0.71f),
+                center = Offset(topLeft.x + w / 2, topLeft.y + h * 0.8f),
                 radius = sw / 2,
             ),
-            Offset(topLeft.x + (w - sw) / 2, topLeft.y + h * 0.71f - sh / 2),
+            Offset(topLeft.x + (w - sw) / 2, topLeft.y + h * 0.8f - sh / 2),
             Size(sw, sh),
             alpha = alpha,
         )

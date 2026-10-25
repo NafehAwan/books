@@ -10,6 +10,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -168,25 +171,33 @@ fun NewCarBanner(b: Banner, onDone: () -> Unit) {
         Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(top = 80.dp),
+            .padding(top = 70.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
-        Panel(
-            Modifier.graphicsLayer { translationY = y.value * 300.dp.toPx() },
-            corner = 22.dp,
+        Column(
+            Modifier.graphicsLayer { translationY = y.value * 320.dp.toPx() },
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Canvas(Modifier.size(96.dp)) { drawCar(art[b.level], Offset.Zero, size) }
-                HSpace(8.dp)
-                Column {
-                    KidText(stringResource(R.string.new_car), size = 18f, color = Palette.PinkShade)
-                    KidText(stringResource(art[b.level].nameRes), size = 26f)
-                    if (b.tow) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Canvas(Modifier.size(22.dp)) { KidIcons.hook(this, Palette.BlueShade) }
-                            KidText(stringResource(R.string.plus_one_tow), size = 16f, color = Palette.BlueShade)
-                        }
-                    }
+            Canvas(Modifier.size(130.dp)) { drawCar(art[b.level], Offset.Zero, size) }
+            Box(Modifier.offset(y = (-26).dp).size(300.dp, 92.dp), contentAlignment = Alignment.Center) {
+                Canvas(Modifier.fillMaxSize()) { drawRibbon() }
+                Column(Modifier.padding(bottom = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    OutlinedTitle(stringResource(art[b.level].nameRes), size = 26f, outline = Palette.RibbonShade)
+                    KidText(stringResource(R.string.new_car_unlocked), size = 14f, color = Color.White)
+                }
+            }
+            if (b.tow) {
+                Row(
+                    Modifier
+                        .offset(y = (-22).dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Art(R.drawable.ui_tow, Modifier.size(28.dp))
+                    HSpace(6.dp)
+                    KidText(stringResource(R.string.plus_one_tow), size = 16f, color = Palette.HeaderShade)
                 }
             }
         }
@@ -213,7 +224,9 @@ fun StuckDialog(
                     VSpace(16.dp)
                     ChunkyButton(onHelper, Palette.Blue, Palette.BlueShade, stringResource(R.string.call_tow_truck), Modifier.fillMaxWidth().height(72.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Canvas(Modifier.size(32.dp)) { KidIcons.hook(this, Color.White) }
+                            Box(Modifier.size(44.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
+                                Art(R.drawable.ui_tow, Modifier.size(34.dp))
+                            }
                             HSpace(8.dp)
                             KidText(stringResource(R.string.call_tow_truck), size = 20f, color = Color.White)
                         }
@@ -258,11 +271,12 @@ fun WinDialog(onKeepPlaying: () -> Unit, onNewGame: () -> Unit, particles: Parti
     FullScrim {
         DialogCard {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Mascot(MascotMood.Dance, 0, stringResource(R.string.cd_mascot), size = 90.dp)
-                    Canvas(Modifier.size(150.dp)) { drawCar(art[Cars.MAX_LEVEL], Offset.Zero, this.size) }
+                Art(R.drawable.ui_win_badge, Modifier.size(230.dp, 190.dp), stringResource(R.string.cd_mascot))
+                Canvas(Modifier.size(150.dp, 110.dp)) {
+                    val side = this.size.width
+                    drawCar(art[Cars.MAX_LEVEL], Offset(0f, (this.size.height - side) / 2), Size(side, side))
                 }
-                KidText(stringResource(R.string.you_won), size = 28f)
+                OutlinedTitle(stringResource(R.string.you_won), size = 26f, fill = Palette.HeaderBlue, outline = Color.White)
                 VSpace(16.dp)
                 ChunkyButton(onKeepPlaying, Palette.Green, Palette.GreenShade, stringResource(R.string.keep_playing), Modifier.fillMaxWidth().height(72.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -348,12 +362,12 @@ fun Tutorial(
                 DialogCard {
                     Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                            Canvas(Modifier.size(40.dp)) { KidIcons.star(this, Palette.Gold) }
-                            Canvas(Modifier.size(70.dp)) { KidIcons.garage(this, Palette.Pink) }
-                            Canvas(Modifier.size(40.dp)) { KidIcons.star(this, Palette.Gold) }
+                            Art(R.drawable.ui_star_small, Modifier.size(40.dp))
+                            Art(R.drawable.ui_book, Modifier.size(84.dp))
+                            Art(R.drawable.ui_star_small, Modifier.size(40.dp))
                         }
                         VSpace(8.dp)
-                        KidText(stringResource(R.string.tut_collect), size = 26f)
+                        OutlinedTitle(stringResource(R.string.tut_collect), size = 26f, fill = Palette.HeaderBlue, outline = Color.White)
                         VSpace(16.dp)
                         ChunkyButton(onDone, Palette.Green, Palette.GreenShade, stringResource(R.string.ok), Modifier.size(120.dp, 72.dp)) {
                             Canvas(Modifier.size(36.dp)) { KidIcons.check(this, Color.White) }
