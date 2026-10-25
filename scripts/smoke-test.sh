@@ -32,7 +32,7 @@ dismiss_anr() {
 tap() { dismiss_anr; dump; read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1"); adb shell input tap "$X" "$Y"; echo "tap '$1' at $X,$Y"; }
 has() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1" >/dev/null 2>&1; }
 cars() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml"; }
-crashed() { adb logcat -d | grep -E "FATAL EXCEPTION: .*|ANR in $PKG" | grep -E "$PKG|FATAL EXCEPTION: main" ; }
+crashed() { adb logcat -d | grep -A2 "FATAL EXCEPTION" | grep -q "Process: $PKG" || adb logcat -d | grep -q "ANR in $PKG"; }
 
 adb wait-for-device
 adb install -r "$APK"
