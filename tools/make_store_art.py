@@ -37,18 +37,22 @@ def main() -> None:
     d.rectangle([0, 420, W, 426], fill=(156, 196, 138))
     canvas = bg.convert("RGBA")
 
-    # the logo and Towy from the design sheets (tools/process_ui_art.py)
-    logo = Image.open(os.path.join(CARS, "ui_logo.webp")).convert("RGBA")
-    logo = logo.resize((440, int(logo.height * 440 / logo.width)), Image.LANCZOS)
-    canvas.alpha_composite(logo, ((W - logo.width) // 2 - 90, 6))
-    towy = Image.open(os.path.join(CARS, "ui_towy_front.webp")).convert("RGBA")
-    towy = towy.resize((200, int(towy.height * 200 / towy.width)), Image.LANCZOS)
-    canvas.alpha_composite(towy, (W - 300, 30))
+    # the logo and the waving Towy, arranged like the home screen design
+    logo = Image.open(os.path.join(CARS, "ui_logo_big.webp")).convert("RGBA")
+    lw = 420
+    logo = logo.resize((lw, int(logo.height * lw / logo.width)), Image.LANCZOS)
+    lx, ly = 40, 12
+    canvas.alpha_composite(logo, (lx, ly))
+    # Towy sits over the logo's lower-right corner, exactly as on the home screen design
+    towy = Image.open(os.path.join(CARS, "ui_towy_wave.webp")).convert("RGBA")
+    tw = int(lw * 528 / 760)
+    towy = towy.resize((tw, int(towy.height * tw / towy.width)), Image.LANCZOS)
+    canvas.alpha_composite(towy, (lx + int(lw * (588 - 112) / 760), ly + int(logo.height * 252 / 445)))
 
     # a parade of cars from small to big
-    lineup = [(1, 150), (3, 160), (7, 175), (9, 185), (11, 205)]
+    lineup = [(1, 115), (7, 130), (11, 150)]
     total = sum(w for _, w in lineup) + 18 * (len(lineup) - 1)
-    px = (W - total) // 2
+    px = W - total - 24
     for level, width in lineup:
         img = car(level, width)
         sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))

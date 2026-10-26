@@ -37,8 +37,6 @@ ASSETS = {
     "ui_music": ("icons_sheet", (1080, 52, 1175, 150), "key", 128),
     "ui_vibrate": ("icons_sheet", (1242, 58, 1340, 146), "key", 128),
     "ui_close": ("icons_sheet", (1406, 62, 1488, 138), "key", 128),
-    "ui_play": ("icons_sheet", (680, 245, 790, 355), "key", 128),
-    "ui_garage": ("icons_sheet", (902, 242, 1030, 358), "key", 160),
     "ui_book": ("icons_sheet", (1130, 250, 1270, 350), "key", 160),
     "ui_back": ("icons_sheet", (65, 452, 155, 525), "key", 128),
     "ui_home": ("icons_sheet", (225, 445, 310, 525), "key", 128),
@@ -47,7 +45,6 @@ ASSETS = {
     "ui_crown": ("icons_sheet", (1070, 450, 1180, 530), "key", 128),
     "ui_star_small": ("icons_sheet", (1390, 440, 1490, 535), "key", 128),
     # Towy the tow truck and the logo
-    "ui_logo": ("game_design", (58, 92, 395, 305), "rembg", 640),
     "ui_towy_front": ("game_design", (588, 498, 802, 708), "rembg", 320),
     "ui_towy_happy": ("game_design", (1238, 528, 1372, 630), "rembg", 220),
     "ui_towy_laugh": ("game_design", (1378, 528, 1512, 630), "rembg", 220),
@@ -56,6 +53,11 @@ ASSETS = {
     "ui_towy_bounce": ("game_design", (592, 810, 742, 925), "rembg", 240),
     "ui_win_badge": ("game_design", (1240, 760, 1520, 990), "rembg", 420),
     "ui_towy_wink": ("screens_design", (96, 784, 338, 976), "rembg", 420),
+    # home screen design (1116 x 2000)
+    "ui_logo_big": ("home_design", (112, 200, 872, 645), "rembg", 900),
+    "ui_towy_wave": ("home_design", (588, 452, 1116, 908), "rembg", 600),
+    "ui_sticker_book": ("home_design", (118, 1702, 296, 1888), "key", 220),
+    "ui_shop": ("home_design", (462, 1712, 652, 1886), "key", 220),
     # store icons from the screens sheet
     "ui_coin": ("screens_design", (1236, 40, 1294, 94), "rembg", 128),
     "ui_store": ("screens_design", (752, 12, 862, 108), "rembg", 160),
@@ -117,6 +119,28 @@ def key_cut(img: Image.Image) -> Image.Image:
     return Image.fromarray(rgba, "RGBA")
 
 
+# Post-processing for specific cut-outs: (fill enclosed holes, regions to erase in sheet coordinates)
+FIXES = {
+    # the flag's white squares are enclosed holes; Towy's hat pokes in under the "s"
+    "ui_logo_big": (True, [(724, 508, 872, 645), (680, 556, 872, 645)]),
+}
+
+
+def apply_fixes(name: str, cut: Image.Image, box: tuple, scale: float) -> Image.Image:
+    fill, erase = FIXES.get(name, (False, []))
+    a = np.array(cut)
+    for (x0, y0, x1, y1) in erase:
+        ex0, ey0 = int((x0 - box[0]) * scale), int((y0 - box[1]) * scale)
+        ex1, ey1 = int((x1 - box[0]) * scale), int((y1 - box[1]) * scale)
+        a[max(ey0, 0):max(ey1, 0), max(ex0, 0):max(ex1, 0), 3] = 0
+    if fill:
+        solid = (a[..., 3] > 128).astype(np.uint8)
+        flood = solid.copy()
+        cv2.floodFill(flood, np.zeros((flood.shape[0] + 2, flood.shape[1] + 2), np.uint8), (0, 0), 1)
+        a[..., 3][flood == 0] = 255
+    return Image.fromarray(a, "RGBA")
+
+
 def drop_bluish(img: Image.Image) -> Image.Image:
     """The gift's bow overlaps the button border; remove those light-blue border pixels."""
     a = np.array(img).astype(np.int32)
@@ -140,6 +164,7 @@ def main() -> None:
     os.makedirs(RES, exist_ok=True)
     os.makedirs(OUT, exist_ok=True)
     sheets = {n: Image.open(os.path.join(SRC, n + ".png")).convert("RGB") for n in ("icons_sheet", "game_design", "screens_design")}
+    sheets["home_design"] = Image.open(os.path.join(SRC, "home_design.jpg")).convert("RGB")
     results = {}
     for name, (sheet, box, method, max_side) in ASSETS.items():
         crop = sheets[sheet].crop(box)
@@ -147,6 +172,12 @@ def main() -> None:
             # upscale first: the model segments small artwork better at larger sizes
             crop = crop.resize((crop.width * 2, crop.height * 2), Image.LANCZOS)
             cut = rembg_cut(crop)
+            if name in FIXES:
+                # rembg zeroes the colour of pixels it drops; restore it so filled holes keep their colour
+                arr = np.array(cut)
+                orig = np.array(crop)
+                arr[..., :3] = np.where(arr[..., 3:4] == 0, orig, arr[..., :3])
+                cut = apply_fixes(name, Image.fromarray(arr, "RGBA"), box, 2.0)
         else:
             cut = key_cut(crop.resize((crop.width * 2, crop.height * 2), Image.LANCZOS))
         if name == "ui_gift":

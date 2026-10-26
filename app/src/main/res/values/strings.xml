@@ -17,11 +17,11 @@
 
     <!-- Home -->
     <string name="play">Play</string>
+    <string name="lets_merge">Let’s merge!</string>
     <string name="garage">Garage</string>
 
     <!-- Game -->
     <string name="best_label">Best %1$d</string>
-    <string name="best">Best</string>
     <string name="undo">Undo</string>
     <string name="combo">Combo x%1$d</string>
     <string name="plus_one_tow">+1 tow truck</string>

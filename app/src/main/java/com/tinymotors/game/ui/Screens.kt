@@ -49,6 +49,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalResources
@@ -75,6 +76,25 @@ import kotlin.math.sin
 
 // ======================= Home =======================
 
+/** Positions on the home "sky stage", in the design's own units (1116 wide, stage starts at y = 200). */
+private const val DESIGN_W = 1116f
+private const val STAGE_H = 1080f
+
+private data class CloudCar(val level: Int, val x: Float, val y: Float, val w: Float, val phase: Float)
+
+private val CLOUD_CARS = listOf(
+    CloudCar(2, 455f, 690f, 210f, 0.0f),
+    CloudCar(1, 215f, 840f, 215f, 0.35f),
+    CloudCar(4, 905f, 840f, 215f, 0.6f),
+    CloudCar(3, 680f, 930f, 215f, 0.15f),
+)
+
+private val SPARKLES = floatArrayOf(
+    370f, 625f, 18f, 548f, 620f, 16f, 113f, 765f, 26f, 664f, 760f, 24f, 800f, 765f, 18f, 378f, 885f, 15f,
+    455f, 975f, 17f, 348f, 1020f, 15f, 875f, 1050f, 20f, 1040f, 820f, 12f, 1020f, 775f, 12f, 455f, 450f, 16f,
+    320f, 470f, 14f, 588f, 455f, 10f, 1063f, 385f, 12f, 1030f, 285f, 18f, 657f, -35f, 14f,
+)
+
 @Composable
 fun HomeScreen(state: UiState, vm: GameViewModel) {
     val game = state.game
@@ -83,97 +103,47 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
         if (state.giftAvailable && state.loaded) showGift = true
     }
     Box(Modifier.fillMaxSize()) {
-        SkyBackground(scenery = true, groundFraction = 0.8f)
-        DrivingCars(levels = (Cars.MIN_LEVEL..Cars.MAX_LEVEL).filter { game?.isUnlocked(it) == true }.ifEmpty { listOf(1, 2) })
+        SkyBackground(scenery = true, groundFraction = 0.79f)
         Column(
             Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // top: best score, daily gift, settings
             Row(Modifier.fillMaxWidth().widthIn(max = 560.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (game != null) {
-                    StatPill(R.drawable.ui_crown, stringResource(R.string.best), game.best.toString(), Modifier.weight(1f))
-                    HSpace(6.dp)
-                    StatPill(
-                        R.drawable.ui_coin, stringResource(R.string.coins), game.coins.toString(),
-                        Modifier.weight(1f).clickable { vm.navigate(Screen.Store) },
-                    )
-                } else {
-                    Box(Modifier.weight(1f))
-                }
-                HSpace(8.dp)
+                StatPill(R.drawable.ui_star_small, null, (game?.best ?: 0L).toString(), Modifier.widthIn(min = 150.dp))
+                Box(Modifier.weight(1f))
                 WhiteIconButton(
                     R.drawable.ui_gift, stringResource(R.string.cd_gift),
                     onClick = {
                         vm.click()
                         if (state.giftAvailable) showGift = true
                     },
+                    size = 64.dp,
+                    iconSize = 44.dp,
                     dot = state.giftAvailable,
-                    iconSize = 40.dp,
                 )
                 HSpace(10.dp)
-                WhiteIconButton(R.drawable.ui_gear, stringResource(R.string.cd_settings), { vm.navigate(Screen.Settings) })
+                WhiteIconButton(R.drawable.ui_gear, stringResource(R.string.cd_settings), { vm.navigate(Screen.Settings) }, size = 64.dp, iconSize = 40.dp)
             }
+            // the sky stage: logo, Towy waving from his cloud, cars floating on clouds
+            HomeStage(Modifier.weight(1f).fillMaxWidth().widthIn(max = 560.dp))
+            // play
+            PlayButton(Modifier.widthIn(max = 380.dp).fillMaxWidth(0.82f).height(100.dp)) { vm.navigate(Screen.Game) }
             VSpace(6.dp)
-            Logo(Modifier.widthIn(max = 340.dp).fillMaxWidth(0.82f))
-            Mascot(MascotMood.Idle, 0, stringResource(R.string.cd_mascot), size = 150.dp)
-            VSpace(14.dp)
-            ChunkyButton(
-                onClick = { vm.navigate(Screen.Game) },
-                color = Palette.Green,
-                shade = Palette.GreenShade,
-                contentDescription = stringResource(R.string.play),
-                modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth().height(96.dp),
-                shape = RoundedCornerShape(30.dp),
-                depth = 8.dp,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Art(R.drawable.ui_play, Modifier.size(44.dp))
-                    HSpace(12.dp)
-                    OutlinedTitle(stringResource(R.string.play), size = 38f, outline = Palette.GreenShade)
+            OutlinedTitle(stringResource(R.string.lets_merge), size = 26f, fill = Palette.HeaderShade, outline = Color.White)
+            VSpace(12.dp)
+            // bottom menu
+            Row(Modifier.widthIn(max = 520.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MenuTile(stringResource(R.string.garage), R.drawable.ui_sticker_book, Modifier.weight(1f), badge = game?.let { "${it.unlockedCount}/${Cars.MAX_LEVEL}" }) {
+                    vm.navigate(Screen.Garage)
                 }
+                MenuTile(stringResource(R.string.store), R.drawable.ui_shop, Modifier.weight(1f)) { vm.navigate(Screen.Store) }
+                MenuTile(stringResource(R.string.settings), R.drawable.ui_gear, Modifier.weight(1f)) { vm.navigate(Screen.Settings) }
             }
-            VSpace(16.dp)
-            Row(Modifier.widthIn(max = 360.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ChunkyButton(
-                    onClick = { vm.navigate(Screen.Garage) },
-                    color = Palette.HeaderBlue,
-                    shade = Palette.HeaderShade,
-                    contentDescription = stringResource(R.string.garage),
-                    modifier = Modifier.weight(1f).height(80.dp),
-                    shape = RoundedCornerShape(26.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Art(R.drawable.ui_garage, Modifier.size(36.dp))
-                        HSpace(6.dp)
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            OutlinedTitle(stringResource(R.string.garage), size = 20f)
-                            if (game != null) KidText("${game.unlockedCount}/${Cars.MAX_LEVEL}", size = 14f, color = Color.White.copy(alpha = 0.9f))
-                        }
-                    }
-                }
-                ChunkyButton(
-                    onClick = { vm.navigate(Screen.Store) },
-                    color = Palette.Orange,
-                    shade = Palette.OrangeShade,
-                    contentDescription = stringResource(R.string.store),
-                    modifier = Modifier.weight(1f).height(80.dp),
-                    shape = RoundedCornerShape(26.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(42.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
-                            Art(R.drawable.ui_store, Modifier.size(34.dp))
-                        }
-                        HSpace(6.dp)
-                        OutlinedTitle(stringResource(R.string.store), size = 20f, outline = Palette.OrangeShade)
-                    }
-                }
-            }
-        }
-        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.BottomCenter) {
-            BannerAd(vm, state)
+            BannerAd(vm, state, Modifier.padding(top = 8.dp))
         }
         if (showGift) {
             GiftDialog(
@@ -188,49 +158,142 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
     }
 }
 
-/** The "Tiny Motors" logo with a gentle wobble. */
+/** Logo, waving Towy on a cloud and four cars bobbing on clouds, laid out like the design. */
 @Composable
-private fun Logo(modifier: Modifier) {
-    val reduce = LocalReduceMotion.current
-    val t = rememberInfiniteTransition(label = "logo")
-    val wave = if (reduce) 0f else t.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "w").value
-    Art(
-        R.drawable.ui_logo,
-        modifier
-            .aspectRatio(640f / 366f)
-            .graphicsLayer {
-                rotationZ = sin(wave * 2 * PI).toFloat() * 2f
-                translationY = sin(wave * 2 * PI).toFloat() * 4.dp.toPx()
-            },
-        description = stringResource(R.string.app_name),
-    )
-}
-
-/** Small cars driving along the road at the bottom of the home screen. */
-@Composable
-private fun DrivingCars(levels: List<Int>) {
+private fun HomeStage(modifier: Modifier) {
     val art = LocalCarArt.current
     val reduce = LocalReduceMotion.current
-    val t = rememberInfiniteTransition(label = "road")
-    val p = if (reduce) 0.3f else t.animateFloat(0f, 1f, infiniteRepeatable(tween(14_000, easing = LinearEasing)), label = "p").value
-    Canvas(Modifier.fillMaxSize()) {
-        val carSize = minOf(size.width * 0.22f, 120.dp.toPx())
-        val roadTop = size.height - carSize * 0.42f
-        drawRect(Palette.Road, Offset(0f, roadTop), Size(size.width, size.height - roadTop))
-        drawRect(Color.White.copy(alpha = 0.7f), Offset(0f, roadTop), Size(size.width, 3.dp.toPx()))
-        val dash = 28.dp.toPx()
-        var x = -((p * 8 * dash) % (dash * 2))
-        while (x < size.width) {
-            drawRoundRect(Color.White, Offset(x, roadTop + (size.height - roadTop) * 0.45f), Size(dash, 4.dp.toPx()), CornerRadius(2.dp.toPx()))
-            x += dash * 2
+    val t = rememberInfiniteTransition(label = "stage")
+    val p = if (reduce) 0f else t.animateFloat(0f, 1f, infiniteRepeatable(tween(3600, easing = LinearEasing)), label = "p").value
+    val twinkle = if (reduce) 0.5f else t.animateFloat(0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing)), label = "tw").value
+    val appName = stringResource(R.string.app_name)
+    val towyName = stringResource(R.string.cd_mascot)
+    BoxWithConstraints(modifier, contentAlignment = Alignment.TopCenter) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val wPx = constraints.maxWidth.toFloat()
+        val hPx = constraints.maxHeight.toFloat()
+        val u = minOf(wPx / DESIGN_W, hPx / STAGE_H) // pixels per design unit
+        val left = (wPx - DESIGN_W * u) / 2
+        fun dp(units: Float) = with(density) { (units * u).toDp() }
+        fun x(units: Float) = with(density) { (left + units * u).toDp() }
+        // cars on clouds and sparkles (behind Towy and the logo)
+        Canvas(Modifier.fillMaxSize()) {
+            for (c in CLOUD_CARS) {
+                val bob = sin((p + c.phase) * 2 * PI).toFloat() * 10f * u
+                drawSoftCloud(Offset(left + c.x * u, (c.y + 70f) * u + bob * 0.4f), c.w * 1.45f * u)
+                val side = c.w * u
+                drawCar(art[c.level], Offset(left + c.x * u - side / 2, c.y * u - side / 2 + bob), Size(side, side))
+            }
+            for (i in SPARKLES.indices step 3) {
+                val a = 0.45f + 0.55f * kotlin.math.abs(sin((twinkle + i * 0.137f) * PI).toFloat())
+                drawSparkle(Offset(left + SPARKLES[i] * u, SPARKLES[i + 1] * u), SPARKLES[i + 2] * u, a)
+            }
         }
-        val n = levels.size.coerceAtMost(5)
-        val span = size.width + carSize * 2
-        for (i in 0 until n) {
-            val phase = (p + i.toFloat() / n) % 1f
-            val cx = -carSize + phase * span
-            val hop = abs(sin(phase * PI * 24)).toFloat() * carSize * 0.02f
-            drawCar(art[levels[(levels.size - 1 - i).coerceAtLeast(0)]], Offset(cx, roadTop - carSize * 0.72f - hop), Size(carSize, carSize))
+        Art(
+            R.drawable.ui_logo_big,
+            Modifier
+                .align(Alignment.TopStart)
+                .padding(start = x(112f))
+                .size(dp(760f), dp(760f * 511f / 900f))
+                .graphicsLayer {
+                    rotationZ = sin(p * 2 * PI).toFloat() * 1.2f
+                    translationY = sin(p * 2 * PI).toFloat() * 3.dp.toPx()
+                },
+            description = appName,
+        )
+        Art(
+            R.drawable.ui_towy_wave,
+            Modifier
+                .align(Alignment.TopStart)
+                .padding(start = x(588f), top = dp(250f))
+                .size(dp(528f), dp(528f * 527f / 600f))
+                .graphicsLayer {
+                    translationY = sin((p + 0.5f) * 2 * PI).toFloat() * 6.dp.toPx()
+                    rotationZ = sin(p * 4 * PI).toFloat() * 1.5f
+                },
+            description = towyName,
+        )
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSoftCloud(c: Offset, w: Float) {
+    val shade = Color(0xFFDDEBFA)
+    val white = Color.White
+    drawOval(shade, Offset(c.x - w / 2, c.y - w * 0.06f), Size(w, w * 0.3f))
+    drawCircle(white, w * 0.2f, Offset(c.x - w * 0.22f, c.y - w * 0.02f))
+    drawCircle(white, w * 0.26f, Offset(c.x + w * 0.02f, c.y - w * 0.08f))
+    drawCircle(white, w * 0.19f, Offset(c.x + w * 0.26f, c.y))
+    drawOval(white, Offset(c.x - w * 0.46f, c.y - w * 0.06f), Size(w * 0.92f, w * 0.24f))
+}
+
+/** Four-point twinkle star; alpha changes slowly (well under 3 flashes per second). */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSparkle(c: Offset, r: Float, alpha: Float) {
+    val path = Path().apply {
+        moveTo(c.x, c.y - r)
+        quadraticTo(c.x + r * 0.15f, c.y - r * 0.15f, c.x + r, c.y)
+        quadraticTo(c.x + r * 0.15f, c.y + r * 0.15f, c.x, c.y + r)
+        quadraticTo(c.x - r * 0.15f, c.y + r * 0.15f, c.x - r, c.y)
+        quadraticTo(c.x - r * 0.15f, c.y - r * 0.15f, c.x, c.y - r)
+        close()
+    }
+    drawPath(path, Color(0xFFFFD84A), alpha = alpha)
+    drawCircle(Color.White, r * 0.18f, c, alpha = alpha)
+}
+
+/** Big glossy orange PLAY pill from the design. */
+@Composable
+private fun PlayButton(modifier: Modifier, onClick: () -> Unit) {
+    val reduce = LocalReduceMotion.current
+    val t = rememberInfiniteTransition(label = "play")
+    val pulse = if (reduce) 0f else t.animateFloat(0f, 1f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "pulse").value
+    val label = stringResource(R.string.play)
+    ChunkyButton(
+        onClick = onClick,
+        color = Color(0xFFFFB627),
+        shade = Color(0xFFE08A00),
+        contentDescription = label,
+        modifier = modifier.graphicsLayer {
+            val s = 1f + pulse * 0.035f
+            scaleX = s
+            scaleY = s
+        },
+        shape = CircleShape,
+        depth = 9.dp,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(contentAlignment = Alignment.Center) {
+                Canvas(Modifier.size(52.dp)) { KidIcons.play(this, Color(0xFFC86F00)) }
+                Canvas(Modifier.size(40.dp)) { KidIcons.play(this, Color.White) }
+            }
+            HSpace(12.dp)
+            OutlinedTitle(label.uppercase(), size = 44f, outline = Color(0xFFC86F00))
+        }
+    }
+}
+
+/** White rounded tile with a big picture and a label (Garage, Store, Settings). */
+@Composable
+private fun MenuTile(label: String, icon: Int, modifier: Modifier, badge: String? = null, onClick: () -> Unit) {
+    Box(modifier) {
+        ChunkyButton(
+            onClick, Color.White, Palette.ButtonShade, label,
+            Modifier.fillMaxWidth().height(118.dp), RoundedCornerShape(28.dp), depth = 6.dp,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Art(icon, Modifier.size(64.dp))
+                VSpace(2.dp)
+                KidText(label.uppercase(), size = 17f, color = Palette.HeaderShade)
+            }
+        }
+        if (badge != null) {
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 4.dp)
+                    .clip(CircleShape)
+                    .background(Palette.HeaderBlue)
+                    .padding(horizontal = 7.dp, vertical = 1.dp),
+            ) { KidText(badge, size = 12f, color = Color.White) }
         }
     }
 }
