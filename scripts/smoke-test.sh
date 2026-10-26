@@ -35,6 +35,10 @@ cars() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml"; }
 crashed() { adb logcat -d | grep -A2 "FATAL EXCEPTION" | grep -q "Process: $PKG" || adb logcat -d | grep -q "ANR in $PKG"; }
 
 adb wait-for-device
+# Let a freshly booted emulator settle; its own launcher often freezes for a while after boot.
+until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
+sleep 20
+for i in 1 2 3; do dismiss_anr; done
 adb install -r "$APK"
 adb shell pm clear "$PKG" >/dev/null
 # Keep the UI idle for uiautomator: the app honours "remove animations" by reducing motion.
@@ -46,7 +50,10 @@ adb shell am start -W -n "$PKG/.MainActivity"
 sleep 4
 shot 01_home_gift
 
-if has "Tap the present"; then tap "Tap the present"; sleep 2; shot 02_gift_open; tap "OK"; sleep 1; fi
+for i in 1 2 3; do
+  if has "Tap the present"; then tap "Tap the present"; sleep 2; shot 02_gift_open; tap "OK"; sleep 1; break; fi
+  sleep 2
+done
 shot 03_home
 tap "Play"; sleep 2
 shot 04_game_tutorial
