@@ -39,7 +39,8 @@ adb wait-for-device
 until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
 sleep 20
 for i in 1 2 3; do dismiss_anr; done
-adb install -r "$APK"
+adb uninstall "$PKG" >/dev/null 2>&1 || true
+adb install "$APK"
 adb shell pm clear "$PKG" >/dev/null
 # Keep the UI idle for uiautomator: the app honours "remove animations" by reducing motion.
 adb shell settings put global window_animation_scale 0
