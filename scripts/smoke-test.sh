@@ -23,7 +23,7 @@ dump() {
 }
 # Emulators sometimes show "<system app> isn't responding"; that is not our app, so tap Wait.
 dismiss_anr() {
-  if adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell cat /sdcard/ui.xml | grep -q "isn't responding"; then
+  if adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell cat /sdcard/ui.xml | grep -q "t responding"; then
     adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null
     read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Wait") && adb shell input tap "$X" "$Y"
     echo "dismissed a system 'not responding' dialog"; sleep 2
