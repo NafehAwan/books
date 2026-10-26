@@ -11,7 +11,18 @@ PKG=com.tinymotors.game
 HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$OUT"
 # Always keep the device log, so a failure shows its cause.
-trap 'adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true' EXIT
+report() {
+  code=$?
+  adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true
+  if [ "$code" -ne 0 ]; then
+    echo "---- smoke test failed; what was on screen:"
+    adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell cat /sdcard/ui.xml \
+      | grep -o '\(text\|content-desc\|package\)="[^"]\+"' | sort | uniq -c | head -40 || true
+    echo "---- app errors in the device log:"
+    grep -E "ANR in|FATAL EXCEPTION|AndroidRuntime|Process: $PKG|$PKG|System.err|DEBUG +:" "$OUT/logcat.txt" | tail -80 || true
+  fi
+}
+trap report EXIT
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "screenshot $1"; }
 dump() {
@@ -39,7 +50,8 @@ adb wait-for-device
 until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
 sleep 20
 for i in 1 2 3; do dismiss_anr; done
-adb install -r "$APK"
+adb uninstall "$PKG" >/dev/null 2>&1 || true
+adb install "$APK"
 adb shell pm clear "$PKG" >/dev/null
 # Keep the UI idle for uiautomator: the app honours "remove animations" by reducing motion.
 adb shell settings put global window_animation_scale 0

@@ -40,6 +40,20 @@ jobs:
       - name: Release AAB and APK
         run: ./gradlew bundleRelease assembleRelease
 
+      # The emulator test installs the release build (shrunk by R8), signed with a throwaway key.
+      - name: Test-signed release APK
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          keytool -genkeypair -keystore ci-test.jks -storepass android -keypass android -alias test \
+            -keyalg RSA -keysize 2048 -validity 365 -dname "CN=CI test" 2>/dev/null
+          "$BT/zipalign" -f -p 4 "$(ls app/build/outputs/apk/release/*.apk | head -1)" aligned.apk
+          "$BT/apksigner" sign --ks ci-test.jks --ks-pass pass:android --key-pass pass:android \
+            --out app-release-test.apk aligned.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tiny-motors-release-test-apk
+          path: app-release-test.apk
       - uses: actions/upload-artifact@v4
         with:
           name: tiny-motors-debug-apk
@@ -67,6 +81,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tiny-motors-debug-apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: tiny-motors-release-test-apk
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -79,7 +96,7 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: false
-          script: bash scripts/smoke-test.sh app-debug.apk smoke-out
+          script: bash scripts/smoke-test.sh app-release-test.apk smoke-out/release && bash scripts/smoke-test.sh app-debug.apk smoke-out/debug
       - uses: actions/upload-artifact@v4
         if: always()
         with:
