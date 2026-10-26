@@ -168,6 +168,30 @@ analytics SDK is included.
    nothing). Debug builds always use the test IDs, so you can never click your own real ads.
 4. Link AdMob to your payments profile to get paid.
 
+### Ad content filters (keep ads halal-friendly)
+
+No ad network can promise that every single ad fits your values, so use every filter AdMob offers.
+The app already does this in code:
+
+* every request is child-directed and under the age of consent, with maximum rating **G**, which
+  already excludes alcohol, gambling, dating, adult content and personalised ads;
+* ad sound is always muted, so video ads never play music or voices.
+
+Then in the AdMob console, open **Blocking controls** for Tiny Motors:
+
+1. **Sensitive categories:** block every one you do not want. Good candidates: astrology and
+   esoteric, social casino games, get-rich-quick, dating, references to sex, cosmetic procedures,
+   weight loss, ringtones and downloadables (music), sensationalism, politics, religion.
+2. **General categories:** block banking, loans and credit, insurance and investing (interest),
+   and any food and drink, entertainment, music or fashion groups you prefer to avoid.
+3. **Advertiser URLs:** add any advertiser you see and dislike.
+4. **Ad review center:** turn it on and regularly look at the ads that served in your app; block
+   single ads or whole advertisers with one tap.
+
+Category names change from time to time, so choose from the list AdMob shows you. For a 100 %
+guarantee the only option is no third-party ads at all (earn from coin packs only); that is a
+small code change if you ever want it.
+
 ### Set up in-app purchases (your purchase money)
 
 1. In Play Console, set up a payments profile (Monetize → Monetization setup).

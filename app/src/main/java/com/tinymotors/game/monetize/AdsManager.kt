@@ -20,7 +20,9 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Google AdMob, set up for a children's app: every request is tagged child-directed and
  * under the age of consent, and only G-rated ads may show. No advertising ID is used
- * (the AD_ID permission is removed in the manifest).
+ * (the AD_ID permission is removed in the manifest). Ad sound is always muted.
+ * Category blocking (for example finance with interest, astrology, music downloads) is set in
+ * the AdMob console; see "Ad content filters" in README.md.
  */
 class AdsManager(context: Context) {
     private val app = context.applicationContext
@@ -53,6 +55,9 @@ class AdsManager(context: Context) {
         Thread {
             MobileAds.initialize(app) {
                 main.post {
+                    // Ads never play sound (no music or voices in ads).
+                    MobileAds.setAppMuted(true)
+                    MobileAds.setAppVolume(0f)
                     _started.value = true
                     loadRewarded()
                 }
