@@ -11,7 +11,18 @@ PKG=com.tinymotors.game
 HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$OUT"
 # Always keep the device log, so a failure shows its cause.
-trap 'adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true' EXIT
+report() {
+  code=$?
+  adb logcat -d > "$OUT/logcat.txt" 2>/dev/null || true
+  if [ "$code" -ne 0 ]; then
+    echo "---- smoke test failed; what was on screen:"
+    adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell cat /sdcard/ui.xml \
+      | grep -o '\(text\|content-desc\|package\)="[^"]\+"' | sort | uniq -c | head -40 || true
+    echo "---- app errors in the device log:"
+    grep -E "ANR in|FATAL EXCEPTION|AndroidRuntime|Process: $PKG|$PKG|System.err|DEBUG +:" "$OUT/logcat.txt" | tail -80 || true
+  fi
+}
+trap report EXIT
 
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "screenshot $1"; }
 dump() {
