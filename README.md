@@ -214,7 +214,7 @@ checked on the device only; there is no server-side receipt check.
   coins), damaged saves, and a real DataStore round trip that simulates process death.
 * **Lint:** no issues in debug or release.
 * **Emulator (Android 14, Pixel 6 profile, in GitHub Actions):** `scripts/smoke-test.sh` passed:
-  launch, daily gift (+25 coins), Play, drag-merge (7 cars stay 7 because a new car arrives; City
+  launch on the new Home screen, daily gift (+25 coins), Play, drag-merge (7 cars stay 7 because a new car arrives; City
   hatches 2 → 3), tutorial, move to an empty space (7 → 8), tow (8 → 7), moving cars until the
   board was full (30), process death and resume with the same board, back button, Store (Themes
   and Coins tabs; the test reward video loaded), Garage with a test banner, Settings, and 1500
