@@ -71,7 +71,7 @@
     <string name="set_voice">Say car names</string>
     <string name="set_hints">Hints</string>
     <string name="start_over_done">All clean! Fresh start.</string>
-    <string name="privacy_note">Tiny Motors shows child-safe ads (Google AdMob, child-directed, no personalised ads). Coin packs and Remove ads are optional purchases behind a grown-up gate. Your game progress stays on this device.</string>
+    <string name="privacy_note">Tiny Motors shows child-safe ads (Google AdMob, child-directed, no personalised ads). Coin packs and Remove ads are optional purchases behind a grown-up gate. Game progress is saved on this device and in Android backup (your own Google account), so it comes back after reinstalling.</string>
     <string name="credits">Font: Fredoka (SIL Open Font License). Sounds and music made for Tiny Motors.</string>
 
     <!-- Redesign -->
