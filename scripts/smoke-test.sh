@@ -153,6 +153,11 @@ tap "Play"; sleep 2
 FRESH=$(cars)
 echo "cars after PLAY: $FRESH"
 test "$FRESH" -eq 7 || { echo "FAIL: PLAY should start a new game with 7 cars"; exit 1; }
+# The test banner above the board (loading needs network, so this only reports).
+sleep 4; dump
+echo "game banner: $(python3 "$HERE/smoke_ui.py" bounds "$OUT/ui.xml" "Test Ad" 2>/dev/null || echo "not loaded")," \
+  "home button: $(python3 "$HERE/smoke_ui.py" bounds "$OUT/ui.xml" "Home" 2>/dev/null)"
+shot 14b_game_banner
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 # Animations back on, then a random-tap stress test inside the app.

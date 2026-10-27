@@ -330,6 +330,8 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // a small banner on top, with a gap so it is not tapped by mistake instead of the buttons
+            GameBannerAd(vm, state, Modifier.padding(bottom = 10.dp))
             TopBar(
                 game = game,
                 soundOn = state.settings.sound || state.settings.music,

@@ -8,7 +8,7 @@
 | Short description (max 80) | **Merge cute cars, build a Hypercar and fill your Garage sticker book!** (72 characters) |
 | Category | Games → Puzzle (or Educational) |
 | Tags | Merge, Cars, Puzzle, Kids, Casual |
-| Contains ads | **Yes** (child-safe AdMob: small banners on menus, optional reward videos) |
+| Contains ads | **Yes** (child-safe AdMob: small banners on menus and above the game board, optional reward videos) |
 | In-app purchases | **Yes** (coin packs, Remove ads; all behind a grown-up gate) |
 | Graphics | Icon `store/play_icon_512.png`, feature graphic `store/feature_graphic_1024x500.png`, screenshots in `store/screenshots/` |
 
@@ -32,7 +32,8 @@
 >
 > Made for kids and parents:
 > • Unlimited play: no lives, no timers, no countdowns, no "game over"
-> • Child-safe ads only (no personalised ads), never during play, and a one-time Remove ads option
+> • Child-safe ads only (no personalised ads): a small banner that never covers the game, no pop-up
+>   ads, and a one-time Remove ads option
 > • Every purchase sits behind a grown-up gate; coins can always be earned for free
 > • Parent settings for sound, music, vibration, voice and hints
 > • Respects the system "Remove animations" setting

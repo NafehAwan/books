@@ -445,6 +445,33 @@ private fun ParentGate(onPassed: () -> Unit, onCancel: () -> Unit) {
 }
 
 /** Child-directed AdMob banner. Only on the Home and Garage screens, never during play. */
+/**
+ * The banner above the game board. It is the small standard 320 x 50 size and always keeps the
+ * same slot, so the board never moves when an ad loads or fails. Nothing shows during the
+ * first-time tutorial, and the slot disappears for good after "Remove ads".
+ */
+@Composable
+fun GameBannerAd(vm: GameViewModel, state: UiState, modifier: Modifier = Modifier) {
+    if (state.adsRemoved) return
+    val ready by vm.ads.ready.collectAsState()
+    Box(modifier.fillMaxWidth().height(GAME_BANNER_HEIGHT), contentAlignment = Alignment.Center) {
+        if (ready && state.tutorialSeen) {
+            AndroidView(
+                factory = { ctx ->
+                    AdView(ctx).apply {
+                        setAdSize(AdSize.BANNER)
+                        adUnitId = vm.ads.bannerUnitId
+                        loadAd(AdRequest.Builder().build())
+                    }
+                },
+                onRelease = { it.destroy() },
+            )
+        }
+    }
+}
+
+private val GAME_BANNER_HEIGHT = 50.dp
+
 @Composable
 fun BannerAd(vm: GameViewModel, state: UiState, modifier: Modifier = Modifier) {
     val ready by vm.ads.ready.collectAsState()

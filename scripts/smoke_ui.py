@@ -6,6 +6,7 @@
   smoke_ui.py cars <xml>                         -> number of cars on the board
   smoke_ui.py count <xml> <content-desc>         -> number of nodes with exactly that description
   smoke_ui.py anycar <xml>                       -> "x y" of the first car on the board
+  smoke_ui.py bounds <xml> <content-desc>        -> "[x1,y1][x2,y2]" of the first node starting with it
 """
 import re
 import sys
@@ -27,6 +28,12 @@ def nodes(path):
 def main():
     cmd, path = sys.argv[1], sys.argv[2]
     all_nodes = list(nodes(path))
+    if cmd == "bounds":
+        for n in ET.parse(path).iter("node"):
+            if (n.get("content-desc") or n.get("text") or "").startswith(sys.argv[3]):
+                print(n.get("bounds"))
+                return
+        sys.exit(f"not found: {sys.argv[3]}")
     if cmd == "center":
         want = sys.argv[3]
         for desc, (x, y) in all_nodes:

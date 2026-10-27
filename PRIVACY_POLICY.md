@@ -1,6 +1,6 @@
 # Tiny Motors privacy policy
 
-_Last updated: 25 October 2026_
+_Last updated: 27 October 2026_
 
 Tiny Motors is a game for children aged 5 to 10. We (the developer) do not collect, store on any
 server, sell or share any personal information about children or parents.
@@ -18,7 +18,8 @@ deleted when the app is uninstalled, when the app's storage is cleared, or with
 
 The app shows ads from Google AdMob, a Google Play Families self-certified ads SDK:
 
-* a small banner on the Home and Garage screens (never during play), and
+* a small banner on the Home and Garage screens and in a strip above the game board (it never
+  covers the game), and
 * optional reward videos that the child chooses to watch for coins (at most 5 a day). Every video
   is labelled "Ad".
 

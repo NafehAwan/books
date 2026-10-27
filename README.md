@@ -7,7 +7,7 @@ itself. Every new car goes into the Garage sticker book.
 
 Play is unlimited: no lives, timers or "game over". The game earns money in a child-safe way:
 coins (earned by playing, or bought) buy board themes in the Store, small AdMob banners show on the
-Home and Garage screens (never during play), children can choose to watch a reward video for
+Home and Garage screens and in a fixed strip above the game board (never covering it), children can choose to watch a reward video for
 coins, and parents can buy **Remove ads**. Every real-money button sits behind a grown-up gate.
 See **Money: ads and purchases** below.
 
@@ -143,7 +143,7 @@ How it earns, and how it stays kind:
 | Coins | Earned free: a merge pays the new car's level (1–11), +20 for each new car type, +100 for the Hypercar, +25 with the daily gift, +50 per reward video. Also sold in packs. | Coins only buy board themes. They never buy cars, lives or progress. |
 | Store | Board themes: Sunny Park (free), Beach Day 200, Snow Day 400, Candy Land 600, Night Drive 900 coins. | Cosmetic only. |
 | Reward videos | "Watch an ad: +50 coins", labelled **Ad**. | Always the child's choice, at most 5 a day. |
-| Banners | Small adaptive banner on Home and Garage. | Never on the game board, in dialogs or in Settings. |
+| Banners | Small adaptive banner on Home and Garage; a small 320 × 50 banner in its own strip above the game board. | Never covering the board, in dialogs or in Settings. The game strip keeps a fixed size so nothing moves when an ad loads, sits apart from the buttons so it is not tapped by mistake, and stays empty during the first-time tutorial. |
 | Coin packs | `coins_500`, `coins_1500`, `coins_4000` (consumable). | Behind the grown-up gate (hold 3 s), then Google Play's own confirmation. |
 | Remove ads | `remove_ads` (one-time). | Removes banners for good and is restored automatically. Reward videos stay optional. |
 
