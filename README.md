@@ -156,25 +156,20 @@ analytics SDK is included.
 
 1. Create an AdMob account (<https://admob.google.com>), add the app (Android), and in
    **App settings** set it as directed to children and the max ad content rating to **G**.
-2. Create two ad units: an **Adaptive banner** and a **Rewarded** ad.
-3. Give the three IDs to the build. Either:
+2. Create two ad units: a **Banner** (one unit serves Home, Garage and the strip above the game board; set its refresh rate to 60 s) and a **Rewarded** ad (reward: 50 coins).
+3. Put the IDs in `gradle.properties` (already done for the App ID and the banner):
 
-   * **On GitHub (no code):** repository **Settings → Secrets and variables → Actions →
-     Variables → New repository variable**, three times:
+   ```properties
+   admobAppId=ca-app-pub-6891300070780198~4630908866
+   admobBannerId=ca-app-pub-6891300070780198/9074173022
+   admobRewardedId=ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW
+   ```
 
-     | Name | Value (from AdMob) |
-     | --- | --- |
-     | `ADMOB_APP_ID` | App ID, `ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY` |
-     | `ADMOB_BANNER_ID` | Banner ad unit ID, `ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ` |
-     | `ADMOB_REWARDED_ID` | Rewarded ad unit ID, `ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW` |
+   These IDs are not secret (they are inside every copy of the app), so they live in the repo and
+   every release build, local or CI, uses them.
 
-     The next CI run puts them in the **tiny-motors-release** AAB and APK. (These IDs are not
-     secret; they are inside every copy of the app anyway.)
-   * **On your computer:** add `admobAppId=…`, `admobBannerId=…` and `admobRewardedId=…` to
-     `gradle.properties` (or `~/.gradle/gradle.properties`).
-
-   Until you do, every build uses Google's official **test** IDs (they show "Test Ad" and earn
-   nothing). Debug builds and the CI emulator test always use the test IDs, so neither you nor CI
+   Any ID that is missing falls back to Google's official **test** ID (they show "Test Ad" and
+   earn nothing). Debug builds and the CI emulator test always use the test IDs, so neither you nor CI
    can ever click or load your own real ads by accident (that can get an AdMob account banned).
 4. Link the AdMob app to the Play Store listing once the app is published (AdMob → App settings →
    **Add app store details**). Until then AdMob serves few or no real ads.

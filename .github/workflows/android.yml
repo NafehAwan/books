@@ -9,12 +9,7 @@ jobs:
   build:
     name: Test, lint and build
     runs-on: ubuntu-latest
-    env:
-      # Your AdMob IDs, from repository variables (Settings -> Secrets and variables -> Actions ->
-      # Variables). Empty means Google's test ads. Debug builds always use test ads.
-      ORG_GRADLE_PROJECT_admobAppId: ${{ vars.ADMOB_APP_ID }}
-      ORG_GRADLE_PROJECT_admobBannerId: ${{ vars.ADMOB_BANNER_ID }}
-      ORG_GRADLE_PROJECT_admobRewardedId: ${{ vars.ADMOB_REWARDED_ID }}
+    # Release builds take the AdMob IDs from gradle.properties; debug builds always use test ads.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
