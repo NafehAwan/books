@@ -102,10 +102,16 @@ Check it against Google's current AdMob guidance before you submit
 * Ads declaration: **Yes, my app contains ads.**
 * News app: No. COVID-19 app: No. Government app: No. Financial features: None. Health: No.
 
-## Screenshots to take (phone, portrait)
+## Screenshots (phone, 1080 × 1920, ready to upload)
 
-1. Home screen with the logo, Towy and the driving cars (`store/screenshots/1_home.png`).
-2. Game board mid-play with several car levels (`2_game.png`).
-3. The Garage sticker book (`3_garage.png`).
-4. The Store with board themes (`4_store_themes.png`).
-5. A "New car!" ribbon and the Hypercar celebration.
+Google Play needs 2–8 phone screenshots, and the long side may be at most twice the short side
+(so 1080 × 2400 is rejected; these are 9:16). Taken on an emulator in airplane mode, so no test
+ads show. Re-take them with `scripts/store-screenshots.sh` (or the "Store screenshots" workflow).
+
+1. `store/screenshots/1_home.png`: Home screen with the logo and Towy
+2. `2_game.png`: a busy board mid-game
+3. `3_new_car.png`: the "New car unlocked!" ribbon
+4. `4_garage.png`: the Garage sticker book
+5. `5_store_themes.png`: board themes in the Store
+6. `6_daily_gift.png`: the daily present
+7. `7_parent_settings.png`: parent settings

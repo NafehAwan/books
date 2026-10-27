@@ -1,11 +1,8 @@
 name: Store screenshots
 
+# Run by hand (Actions tab -> Store screenshots -> Run workflow) when the look of the game changes.
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/store-screenshots.yml
-      - scripts/store-screenshots.sh
 
 permissions:
   contents: write
