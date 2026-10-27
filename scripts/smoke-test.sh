@@ -42,7 +42,18 @@ dismiss_anr() {
     echo "dismissed a system 'not responding' dialog"; sleep 2
   fi
 }
-tap() { dismiss_anr; dump; read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1"); adb shell input tap "$X" "$Y"; echo "tap '$1' at $X,$Y"; }
+# A system "not responding" dialog can pop up again right after it was dismissed, so look a few times.
+tap() {
+  local i
+  for i in 1 2 3 4; do
+    dismiss_anr; dump
+    if read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1" 2>/dev/null); then
+      adb shell input tap "$X" "$Y"; echo "tap '$1' at $X,$Y"; return 0
+    fi
+    sleep 2
+  done
+  python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1"   # prints "not found" and fails
+}
 has() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1" >/dev/null 2>&1; }
 cars() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml"; }
 crashed() { adb logcat -d | grep -A2 "FATAL EXCEPTION" | grep -q "Process: $PKG" || adb logcat -d | grep -q "ANR in $PKG"; }
@@ -51,6 +62,8 @@ adb wait-for-device
 # Let a freshly booted emulator settle; its own launcher often freezes for a while after boot.
 until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
 sleep 20
+# Don't show "isn't responding" dialogs for apps in the background (the emulator's launcher).
+adb shell settings put secure anr_show_background 0 || true
 for i in 1 2 3; do dismiss_anr; done
 adb uninstall "$PKG" >/dev/null 2>&1 || true
 adb install "$APK"
