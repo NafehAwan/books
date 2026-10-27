@@ -4,14 +4,16 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.tinymotors.game.engine.DailyGift
 import com.tinymotors.game.engine.GameState
 import com.tinymotors.game.engine.GameStateCodec
 import kotlinx.coroutines.flow.first
 
-/** Everything that is saved on the device. Nothing ever leaves it. */
+/** Everything that is saved on the device (and in Android backup). Nothing is sent to the developer. */
 data class SavedData(
     val game: GameState?,
     val settings: Settings,
@@ -20,13 +22,20 @@ data class SavedData(
     val adsRemoved: Boolean = false,
     val rewardDay: Int = DailyGift.NEVER,
     val rewardCount: Int = 0,
+    /** Google Play purchase tokens whose coins were already added (so they are never added twice). */
+    val grantedPurchases: Set<String> = emptySet(),
 )
 
 /** Reads and writes the game with Jetpack DataStore. Works on plain JVM too (used by unit tests). */
 class GameRepository(private val store: DataStore<Preferences>) {
 
     suspend fun load(): SavedData {
-        val p = store.data.first()
+        // Reading can fail (for example disk errors); then the game starts with defaults.
+        val p = try {
+            store.data.first()
+        } catch (e: java.io.IOException) {
+            emptyPreferences()
+        }
         return SavedData(
             game = GameStateCodec.decode(p[GAME]),
             settings = Settings(
@@ -41,7 +50,21 @@ class GameRepository(private val store: DataStore<Preferences>) {
             adsRemoved = p[ADS_REMOVED] ?: false,
             rewardDay = p[REWARD_DAY] ?: DailyGift.NEVER,
             rewardCount = p[REWARD_COUNT] ?: 0,
+            grantedPurchases = p[GRANTED] ?: emptySet(),
         )
+    }
+
+    /**
+     * Saves the game with the coins of a coin pack already added, and marks the purchase as
+     * granted, in one write. Only after this is the purchase consumed at Google Play, so the coins
+     * can be neither lost (app closed in between) nor added twice (purchase seen again).
+     */
+    suspend fun saveGrantedPurchase(state: GameState, purchaseToken: String) {
+        val text = GameStateCodec.encode(state)
+        store.edit {
+            it[GAME] = text
+            it[GRANTED] = (it[GRANTED] ?: emptySet()) + purchaseToken
+        }
     }
 
     suspend fun saveGame(state: GameState) {
@@ -78,7 +101,7 @@ class GameRepository(private val store: DataStore<Preferences>) {
         }
     }
 
-    /** Parent "Start over": wipes progress but keeps settings and purchases. */
+    /** Parent "Start over": wipes the saved board and tutorial flag; settings and purchases stay. */
     suspend fun clearProgress() {
         store.edit {
             it.remove(GAME)
@@ -98,5 +121,6 @@ class GameRepository(private val store: DataStore<Preferences>) {
         val ADS_REMOVED = booleanPreferencesKey("ads_removed")
         val REWARD_DAY = intPreferencesKey("reward_day")
         val REWARD_COUNT = intPreferencesKey("reward_count")
+        val GRANTED = stringSetPreferencesKey("granted_purchases")
     }
 }

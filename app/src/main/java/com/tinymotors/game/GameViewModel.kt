@@ -3,7 +3,9 @@ package com.tinymotors.game
 import android.app.Application
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -21,6 +23,7 @@ import com.tinymotors.game.engine.GameState
 import com.tinymotors.game.monetize.AdsManager
 import com.tinymotors.game.monetize.BillingManager
 import com.tinymotors.game.ui.CarArt
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -32,7 +35,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "tiny_motors")
+// A damaged save file (power loss mid-write, a bad backup restore) starts fresh instead of
+// crashing the app on every launch.
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "tiny_motors",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 
 enum class Screen { Home, Game, Garage, Settings, Store }
 
@@ -67,16 +75,23 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     val art = CarArt(app)
 
     private val repo = GameRepository(app.dataStore)
+
+    /** Completes once the saved game is loaded; purchases wait for it so nothing is overwritten. */
+    private val loaded = CompletableDeferred<Unit>()
+    private var grantedPurchases: Set<String> = emptySet()
+
     val ads = AdsManager(app)
     private val billing = BillingManager(
         app,
-        onCoins = { amount ->
-            sound.play(Sfx.Gift)
-            emit(engine.addCoins(amount))
-        },
+        onCoins = { token, amount, consume -> viewModelScope.launch { grantCoins(token, amount, consume) } },
         onAdsRemoved = {
-            if (!_ui.value.adsRemoved) viewModelScope.launch { repo.saveAdsRemoved(true) }
-            _ui.update { it.copy(adsRemoved = true) }
+            viewModelScope.launch {
+                loaded.await()
+                if (!_ui.value.adsRemoved) {
+                    _ui.update { it.copy(adsRemoved = true) }
+                    repo.saveAdsRemoved(true)
+                }
+            }
         },
     )
     private var rewardDay = DailyGift.NEVER
@@ -101,6 +116,7 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
             giftDay = data.giftDay
             rewardDay = data.rewardDay
             rewardCount = data.rewardCount
+            grantedPurchases = data.grantedPurchases
             applySettings(data.settings)
             _ui.update {
                 it.copy(
@@ -114,6 +130,7 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
                 )
             }
             publish(save = data.game == null)
+            loaded.complete(Unit)
         }
         viewModelScope.launch {
             for (state in saveQueue) repo.saveGame(state)
@@ -125,6 +142,7 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     // ---------- navigation ----------
 
     fun navigate(screen: Screen) {
+        if (screen == Screen.Store) ads.retryRewardedIfIdle()
         saved[KEY_SCREEN] = screen.name
         _ui.update { it.copy(screen = screen) }
         click()
@@ -277,6 +295,27 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
         )
     }
 
+    /**
+     * Adds the coins of a coin pack bought at Google Play. Waits for the saved game, skips purchases
+     * already granted, saves the coins together with the purchase token, and only then lets the
+     * purchase be consumed.
+     */
+    private suspend fun grantCoins(token: String, amount: Int, consume: () -> Unit) {
+        loaded.await()
+        if (token in grantedPurchases) {
+            consume()
+            return
+        }
+        val events = engine.addCoins(amount)
+        grantedPurchases = grantedPurchases + token
+        publish(save = false)
+        _effects.tryEmit(Effects(events))
+        sound.play(Sfx.Gift)
+        repo.saveGrantedPurchase(engine.state, token)
+        saveQueue.trySend(engine.state) // the newest state is always the last one written
+        consume()
+    }
+
     /** A grown-up passed the gate: open Google Play for [productId]. Returns false if not available. */
     fun buyProduct(activity: android.app.Activity, productId: String): Boolean = billing.buy(activity, productId)
 
@@ -296,11 +335,18 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
         click()
     }
 
-    /** Parent gate passed: wipe progress (settings stay). */
+    /**
+     * Parent gate passed: wipe the Garage stickers, best score and board. Settings, coins and
+     * bought themes stay, because they may have been paid for.
+     */
     fun startOver() {
         viewModelScope.launch {
             repo.clearProgress()
-            engine = GameEngine(GameEngine.newGameState(System.nanoTime()))
+            val old = engine.state
+            engine = GameEngine(
+                GameEngine.newGameState(System.nanoTime())
+                    .copy(coins = old.coins, ownedThemes = old.ownedThemes, theme = old.theme),
+            )
             combo.reset()
             saved[KEY_WIN] = false
             _ui.update { it.copy(tutorialSeen = false, showWin = false) }
@@ -321,6 +367,7 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     fun onForeground() {
         sound.onForeground()
         ads.start()
+        ads.retryRewardedIfIdle()
         billing.start()
         _ui.update { it.copy(giftAvailable = it.loaded && DailyGift.isAvailable(giftDay, today()), adsLeftToday = adsLeft()) }
     }

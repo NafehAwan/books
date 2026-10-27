@@ -65,6 +65,17 @@ class AdsManager(context: Context) {
         }.start()
     }
 
+    /**
+     * Tries again to load a reward video if none is ready and none is loading, for example after
+     * the retries ran out while the phone was offline. Called when the app comes back to the front
+     * and when the Store opens.
+     */
+    fun retryRewardedIfIdle() {
+        if (!_started.value || loading || rewarded != null) return
+        retries = 0
+        loadRewarded()
+    }
+
     private fun loadRewarded() {
         if (loading || rewarded != null) return
         loading = true

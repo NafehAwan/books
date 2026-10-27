@@ -32,13 +32,16 @@ object Products {
 }
 
 /**
- * Google Play Billing. Coin packs are consumable (consumed, then the coins are added);
- * "Remove ads" is a one-time purchase that is acknowledged and restored on every start.
+ * Google Play Billing. "Remove ads" is a one-time purchase that is acknowledged and restored on
+ * every start. Coin packs are consumable: [onCoins] gets the purchase token and the coins, adds and
+ * saves them (remembering the token), then calls the `consume` callback; only then is the purchase
+ * consumed at Google Play. If consuming fails, the purchase comes back on the next start, and the
+ * remembered token stops the coins from being added twice.
  * All callbacks are delivered on the main thread.
  */
 class BillingManager(
     context: Context,
-    private val onCoins: (Int) -> Unit,
+    private val onCoins: (purchaseToken: String, coins: Int, consume: () -> Unit) -> Unit,
     private val onAdsRemoved: () -> Unit,
 ) : PurchasesUpdatedListener {
 
@@ -124,13 +127,18 @@ class BillingManager(
                 }
             }
             val coins = Products.COIN_PACKS[product] ?: continue
-            synchronized(handledTokens) { if (!handledTokens.add(p.purchaseToken)) return }
-            client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) { r, _ ->
-                if (r.responseCode == BillingClient.BillingResponseCode.OK) {
-                    main.post { onCoins(coins * p.quantity.coerceAtLeast(1)) }
-                } else {
-                    synchronized(handledTokens) { handledTokens.remove(p.purchaseToken) }
-                }
+            val token = p.purchaseToken
+            synchronized(handledTokens) { if (!handledTokens.add(token)) return }
+            main.post { onCoins(token, coins * p.quantity.coerceAtLeast(1)) { consume(token) } }
+        }
+    }
+
+    private fun consume(token: String) {
+        client.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(token).build()) { r, _ ->
+            // Not consumed (for example offline): try again on the next start; the coins are
+            // already saved and the token is remembered, so they are not added again.
+            if (r.responseCode != BillingClient.BillingResponseCode.OK) {
+                synchronized(handledTokens) { handledTokens.remove(token) }
             }
         }
     }

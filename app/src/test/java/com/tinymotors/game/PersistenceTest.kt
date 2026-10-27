@@ -95,4 +95,42 @@ class PersistenceTest {
         assertFalse(loaded.settings.music)
         scope.cancel()
     }
+
+    @Test fun `a granted coin pack is saved with its coins and survives a restart and a reset`() = runTest {
+        val file = tmp.newFile("grant.preferences_pb").also { it.delete() }
+        val engine = playedGame()
+        val before = engine.state.coins
+        engine.addCoins(1500)
+
+        val scope1 = CoroutineScope(UnconfinedTestDispatcher(testScheduler) + SupervisorJob())
+        val repo1 = GameRepository(PreferenceDataStoreFactory.create(scope = scope1) { file })
+        repo1.saveGrantedPurchase(engine.state, "token-1")
+        repo1.saveGrantedPurchase(engine.state, "token-2")
+        scope1.cancel() // process death right after granting, before Google Play consumed it
+
+        val scope2 = CoroutineScope(UnconfinedTestDispatcher(testScheduler) + SupervisorJob())
+        val repo2 = GameRepository(PreferenceDataStoreFactory.create(scope = scope2) { file })
+        val loaded = repo2.load()
+        assertEquals(before + 1500, loaded.game?.coins)
+        assertEquals(setOf("token-1", "token-2"), loaded.grantedPurchases)
+        repo2.clearProgress()
+        assertEquals(setOf("token-1", "token-2"), repo2.load().grantedPurchases)
+        scope2.cancel()
+    }
+
+    @Test fun `a damaged save file reads as empty instead of crashing`() = runTest {
+        val file = tmp.newFile("broken.preferences_pb")
+        file.writeBytes(byteArrayOf(0x0A, 0x7F, 0x01, 0x02, 0x03)) // not a valid preferences file
+        val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler) + SupervisorJob())
+        val store = PreferenceDataStoreFactory.create(
+            corruptionHandler = androidx.datastore.core.handlers.ReplaceFileCorruptionHandler {
+                androidx.datastore.preferences.core.emptyPreferences()
+            },
+            scope = scope,
+        ) { file }
+        val loaded = GameRepository(store).load()
+        assertNull(loaded.game)
+        assertTrue(loaded.grantedPurchases.isEmpty())
+        scope.cancel()
+    }
 }

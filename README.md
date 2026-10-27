@@ -278,8 +278,9 @@ checked on the device only; there is no server-side receipt check.
   including the very first day. Tapping the box gives +1 tow truck (max 5) and 25 coins.
 * **Tutorial** is interactive: a finger drags between two real matching cars on the board, then a
   card says "Every move brings a new car!" and "Find all 11 cars!". Skip is always visible.
-* **Parent Reset** (behind the 3-second hold) erases progress, stickers, best score, coins and
-  themes, but keeps settings and purchases (Remove ads). **Reset Game** (also a 3-second hold)
+* **Parent Reset** (behind the 3-second hold) erases the board, Garage stickers and best score,
+  but keeps settings, coins, bought themes and Remove ads (coins and themes may have been paid
+  for). **Reset Game** (also a 3-second hold)
   only starts a new board.
 * **Android backup of the save file only:** so coins (including bought coin packs), themes and the
   Garage survive a reinstall or a new phone, Android's own backup includes the one DataStore file
