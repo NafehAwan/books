@@ -6,6 +6,7 @@
   smoke_ui.py cars <xml>                         -> number of cars on the board
   smoke_ui.py count <xml> <content-desc>         -> number of nodes with exactly that description
   smoke_ui.py anycar <xml>                       -> "x y" of the first car on the board
+  smoke_ui.py pairlevel <xml>                    -> "x1 y1 x2 y2 level" like pair, plus the merged car's level (1-11)
   smoke_ui.py bounds <xml> <content-desc>        -> "[x1,y1][x2,y2]" of the first node starting with it
 """
 import re
@@ -50,6 +51,13 @@ def main():
         if not cars:
             sys.exit("no cars")
         print(*cars[0][1])
+    elif cmd == "pairlevel":
+        for level, name in enumerate(CARS[:-1], start=1):
+            same = [c for d, c in cars if d == name]
+            if len(same) >= 2:
+                print(*same[0], *same[1], level + 1)
+                return
+        sys.exit("no matching pair")
     elif cmd == "pair":
         # the lowest matching pair, so a fresh board always merges two Kei cars into a City hatch
         for name in CARS[:-1]:
