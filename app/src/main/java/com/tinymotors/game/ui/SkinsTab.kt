@@ -90,10 +90,9 @@ fun SkinsTab(game: GameState, onClick: () -> Unit, onAction: (Int) -> Unit) {
     }
 
     val owned = Skins.ALL.count { game.ownsSkin(it.id) }
-    KidText(
-        stringResource(R.string.skins_collected, owned, Skins.COUNT),
-        Modifier.padding(start = 6.dp), size = 15f, color = Palette.InkSoft, align = TextAlign.Start,
-    )
+    Box(Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.9f)).padding(horizontal = 14.dp, vertical = 4.dp)) {
+        KidText(stringResource(R.string.skins_collected, owned, Skins.COUNT), size = 15f, color = Palette.HeaderShade, align = TextAlign.Start)
+    }
 
     val shown = Skins.ALL.filter { filter == -1 || it.rarity.ordinal == filter }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
