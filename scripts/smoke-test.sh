@@ -56,6 +56,11 @@ tap() {
 }
 has() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "$1" >/dev/null 2>&1; }
 cars() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml"; }
+# Reminder alarms still waiting (the alarm dump also lists cancelled ones in its removal history).
+reminders() {
+  adb shell dumpsys alarm | grep "SHOW_REMINDER" > "$OUT/reminder_alarms.txt" || true
+  grep -viE "removed|reason" "$OUT/reminder_alarms.txt" | grep -c . || true
+}
 crashed() { adb logcat -d | grep -A2 "FATAL EXCEPTION" | grep -q "Process: $PKG" || adb logcat -d | grep -q "ANR in $PKG"; }
 
 adb wait-for-device
@@ -150,8 +155,8 @@ shot 09_full_board
 adb shell input keyevent KEYCODE_HOME
 sleep 2
 # Leaving the game sets up the three "come back and play" reminders (1, 3 and 7 days).
-REMINDERS=$(adb shell dumpsys alarm | grep -c "SHOW_REMINDER" || true)
-echo "reminder alarms waiting: $REMINDERS"
+REMINDERS=$(reminders)
+echo "reminder alarms waiting: $REMINDERS"; cat "$OUT/reminder_alarms.txt"
 test "$REMINDERS" -ge 3 || { adb shell dumpsys alarm | grep -B2 -A6 "$PKG" | head -40; echo "FAIL: reminders were not scheduled"; exit 1; }
 adb shell am kill "$PKG"
 sleep 1
@@ -165,8 +170,8 @@ shot 10_resumed
 adb shell input keyevent KEYCODE_BACK; sleep 3
 # Back home after a first game: Android 13+ asks once whether reminders may be shown.
 if has "Allow"; then shot 10b_reminder_question; tap "Allow"; sleep 1; else echo "no reminder question (older Android or asked before)"; fi
-REMINDERS=$(adb shell dumpsys alarm | grep -c "SHOW_REMINDER" || true)
-echo "reminder alarms while playing: $REMINDERS"
+REMINDERS=$(reminders)
+echo "reminder alarms while playing: $REMINDERS"; cat "$OUT/reminder_alarms.txt"
 test "$REMINDERS" -eq 0 || { echo "FAIL: reminders should be cancelled while the game is open"; exit 1; }
 tap "Store"; sleep 2; shot 11_store_skins
 tap "Moo Car"; sleep 1; shot 11b_skin_picked
