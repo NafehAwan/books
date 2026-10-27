@@ -59,8 +59,22 @@ done
 sleep 1; shot home
 tap "Play"; sleep 2
 
-# Merge the lowest pair again and again. When a merge makes a car never seen before, the
-# "New car!" ribbon shows for about 2.6 s: take that picture straight away.
+# First merge (finishes the tutorial), then move cars to empty spaces: every move brings a new
+# car, so the board fills up and looks like a real game in the pictures.
+dump
+read -r X1 Y1 X2 Y2 _ < <(python3 "$HERE/smoke_ui.py" pairlevel "$OUT/ui.xml")
+adb shell input swipe "$X1" "$Y1" "$X2" "$Y2" 600; sleep 2
+if has "OK"; then tap "OK"; sleep 1; fi
+for i in $(seq 1 11); do
+  dump
+  read -r CX CY < <(python3 "$HERE/smoke_ui.py" anycar "$OUT/ui.xml") || break
+  read -r EX EY < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Empty space") || break
+  adb shell input swipe "$CX" "$CY" "$EX" "$EY" 500; sleep 1.2
+done
+
+# Merge the lowest pair again and again (a new car arrives each time, so the board stays full).
+# When a merge makes a car never seen before, the "New car!" ribbon shows for about 2.6 s:
+# take that picture straight away.
 BEST=2
 for i in $(seq 1 60); do
   dismiss_anr; dump
