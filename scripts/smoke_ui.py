@@ -7,6 +7,7 @@
   smoke_ui.py count <xml> <content-desc>         -> number of nodes with exactly that description
   smoke_ui.py anycar <xml>                       -> "x y" of the first car on the board
   smoke_ui.py pairlevel <xml>                    -> "x1 y1 x2 y2 level" like pair, plus the merged car's level (1-11)
+  smoke_ui.py progress <xml>                     -> the numbers on Home (best score, "N/11" Garage badge), sorted
   smoke_ui.py bounds <xml> <content-desc>        -> "[x1,y1][x2,y2]" of the first node starting with it
 """
 import re
@@ -29,6 +30,11 @@ def nodes(path):
 def main():
     cmd, path = sys.argv[1], sys.argv[2]
     all_nodes = list(nodes(path))
+    if cmd == "progress":
+        vals = sorted({(n.get("text") or "") for n in ET.parse(path).iter("node")
+                       if re.fullmatch(r"\d+(/11)?", n.get("text") or "")})
+        print(" ".join(vals))
+        return
     if cmd == "bounds":
         for n in ET.parse(path).iter("node"):
             if (n.get("content-desc") or n.get("text") or "").startswith(sys.argv[3]):

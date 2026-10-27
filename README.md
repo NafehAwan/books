@@ -286,8 +286,12 @@ checked on the device only; there is no server-side receipt check.
 * **Parent Reset** (behind the 3-second hold) erases progress, stickers, best score, coins and
   themes, but keeps settings and purchases (Remove ads). **Reset Game** (also a 3-second hold)
   only starts a new board.
-* **No backup:** progress is never uploaded or copied to another device (`allowBackup=false` plus
-  exclusion rules), so uninstalling the app deletes progress.
+* **Android backup of the save file only:** so coins (including bought coin packs), themes and the
+  Garage survive a reinstall or a new phone, Android's own backup includes the one DataStore file
+  (`datastore/tiny_motors.preferences_pb`, see `res/xml/data_extraction_rules.xml` and
+  `backup_rules.xml`); nothing else is backed up. It goes to the family's Google account, needs no
+  sign-in in the game, and works when backup is on in the phone settings (Android backs up about
+  once a day). "Remove ads" is also restored by Google Play itself, even without a backup.
 * **Haptics** use the system's light keyboard-tap feedback, which needs no VIBRATE permission and
   respects the phone's own vibration settings.
 * **Voice:** car names are spoken with the phone's text-to-speech engine at a slightly raised

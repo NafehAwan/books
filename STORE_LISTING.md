@@ -80,6 +80,10 @@ Check it against Google's current AdMob guidance before you submit
 * Is all data encrypted in transit? **Yes.**
 * Can users request deletion? Game progress: yes, in the app (Settings → Parent Reset) or by
   uninstalling. Ad data is handled by Google under its policies.
+* Game progress is included in **Android's own backup** (to the user's Google account; the
+  developer has no access). Google's Data safety guidance treats data the developer cannot access
+  as not collected, so it does not need to be declared; check the current Play Console help page
+  ("Data safety section") when you fill in the form.
 * Purchases: handled by Google Play; the app does not collect payment info or purchase history.
 * Privacy policy URL: the public URL where you host `PRIVACY_POLICY.md`.
 

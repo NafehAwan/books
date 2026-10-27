@@ -1,18 +1,27 @@
 # Tiny Motors privacy policy
 
-_Last updated: 27 October 2026_
+_Last updated: 27 October 2026 (Android backup of game progress)_
 
 Tiny Motors is a game for children aged 5 to 10. We (the developer) do not collect, store on any
 server, sell or share any personal information about children or parents.
 
-## What stays on the device
+## Game progress (saved on the device, backed up by Android)
 
 The game board, scores, coins, unlocked cars, bought themes, settings, the date of the last daily
 gift, how many reward videos were watched today, whether the tutorial was seen and whether "Remove
-ads" was bought are saved **only on the device**, so the child can continue where they left off.
-This information is never sent to us, is not backed up and is not copied to other devices. It is
-deleted when the app is uninstalled, when the app's storage is cleared, or with
-**Settings → Parent Reset** (hold for 3 seconds) inside the app. Purchases are kept by Google Play.
+ads" was bought are saved **on the device**, so the child can continue where they left off.
+
+So that progress and anything bought are not lost when the app is reinstalled or the family moves
+to a new phone, this one save file is included in **Android's own backup**. If backup is turned on
+in the phone's settings, Android stores it in the family's own Google account (on recent Android
+versions it is end-to-end encrypted when the phone has a screen lock) and puts it back when the app
+is installed again. We (the developer) cannot see or access these backups, and no other app data is
+included. Parents can turn backup off in the phone's settings (Settings → System → Backup, or
+Google → Backup, depending on the phone).
+
+This information is never sent to us. It is deleted from the device when the app is uninstalled,
+when the app's storage is cleared, or with **Settings → Parent Reset** (hold for 3 seconds) inside
+the app; a Parent Reset is also carried into the next backup. Purchases are kept by Google Play.
 
 ## Advertising (Google AdMob)
 

@@ -164,7 +164,29 @@ sleep 4; dump
 echo "game banner: $(python3 "$HERE/smoke_ui.py" bounds "$OUT/ui.xml" "Test Ad" 2>/dev/null || echo "not loaded")," \
   "home button: $(python3 "$HERE/smoke_ui.py" bounds "$OUT/ui.xml" "Home" 2>/dev/null)"
 shot 14b_game_banner
-adb shell input keyevent KEYCODE_BACK; sleep 1
+adb shell input keyevent KEYCODE_BACK; sleep 2
+
+# Android backup: back up, uninstall, reinstall -> best score and Garage come back.
+dump
+SAVED=$(python3 "$HERE/smoke_ui.py" progress "$OUT/ui.xml")
+echo "progress before uninstall: $SAVED"
+[ -n "$SAVED" ] && [ "$SAVED" != "0 2/11" ] || { echo "FAIL: expected some progress on Home"; exit 1; }
+adb shell bmgr enable true >/dev/null
+LOCAL=$(adb shell bmgr list transports | tr -d '\r* ' | grep -m1 localtransport || true)
+[ -n "$LOCAL" ] && adb shell bmgr transport "$LOCAL" >/dev/null
+adb shell bmgr backupnow "$PKG" | tail -2
+adb uninstall "$PKG" >/dev/null
+adb install "$APK" >/dev/null
+adb shell bmgr restore "$PKG" | tail -1 || true
+sleep 3
+adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
+sleep 5
+dismiss_anr
+dump
+RESTORED=$(python3 "$HERE/smoke_ui.py" progress "$OUT/ui.xml")
+echo "progress after reinstall: $RESTORED"
+shot 14c_restored_home
+test "$RESTORED" = "$SAVED" || { echo "FAIL: progress was not restored from the backup"; exit 1; }
 
 # Animations back on, then a random-tap stress test inside the app.
 adb shell settings put global window_animation_scale 1

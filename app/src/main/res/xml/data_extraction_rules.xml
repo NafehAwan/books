@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Nothing is backed up to the cloud or copied to other devices: all progress stays on this device. -->
+<!--
+  Android 12 and newer. Only the game's save file (Jetpack DataStore) is backed up: to the
+  family's own Google account (cloud backup) and when moving to a new phone (device transfer).
+  So after reinstalling, the Garage, coins, bought themes and settings come back.
+  Nothing else (for example the ads SDK's files) is included.
+-->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="root" />
-        <exclude domain="file" />
-        <exclude domain="database" />
-        <exclude domain="sharedpref" />
-        <exclude domain="external" />
+        <include domain="file" path="datastore/tiny_motors.preferences_pb" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="root" />
-        <exclude domain="file" />
-        <exclude domain="database" />
-        <exclude domain="sharedpref" />
-        <exclude domain="external" />
+        <include domain="file" path="datastore/tiny_motors.preferences_pb" />
     </device-transfer>
 </data-extraction-rules>
