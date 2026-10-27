@@ -157,12 +157,12 @@ analytics SDK is included.
 1. Create an AdMob account (<https://admob.google.com>), add the app (Android), and in
    **App settings** set it as directed to children and the max ad content rating to **G**.
 2. Create two ad units: a **Banner** (one unit serves Home, Garage and the strip above the game board; set its refresh rate to 60 s) and a **Rewarded** ad (reward: 50 coins).
-3. Put the IDs in `gradle.properties` (already done for the App ID and the banner):
+3. Put the IDs in `gradle.properties` (already done):
 
    ```properties
    admobAppId=ca-app-pub-6891300070780198~4630908866
    admobBannerId=ca-app-pub-6891300070780198/9074173022
-   admobRewardedId=ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW
+   admobRewardedId=ca-app-pub-6891300070780198/5011016961
    ```
 
    These IDs are not secret (they are inside every copy of the app), so they live in the repo and
