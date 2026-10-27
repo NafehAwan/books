@@ -9,6 +9,12 @@ jobs:
   build:
     name: Test, lint and build
     runs-on: ubuntu-latest
+    env:
+      # Your AdMob IDs, from repository variables (Settings -> Secrets and variables -> Actions ->
+      # Variables). Empty means Google's test ads. Debug builds always use test ads.
+      ORG_GRADLE_PROJECT_admobAppId: ${{ vars.ADMOB_APP_ID }}
+      ORG_GRADLE_PROJECT_admobBannerId: ${{ vars.ADMOB_BANNER_ID }}
+      ORG_GRADLE_PROJECT_admobRewardedId: ${{ vars.ADMOB_REWARDED_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -37,18 +43,25 @@ jobs:
           printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
             "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
 
-      - name: Release AAB and APK
-        run: ./gradlew bundleRelease assembleRelease
-
-      # The emulator test installs the release build (shrunk by R8), signed with a throwaway key.
-      - name: Test-signed release APK
+      # The emulator test installs a release build (shrunk by R8) signed with a throwaway key. It
+      # always uses Google's test ads: real ad requests from a test machine can get an AdMob
+      # account flagged for invalid traffic.
+      - name: Release APK with test ads for the emulator test
+        env:
+          ORG_GRADLE_PROJECT_admobAppId: ""
+          ORG_GRADLE_PROJECT_admobBannerId: ""
+          ORG_GRADLE_PROJECT_admobRewardedId: ""
         run: |
+          ./gradlew assembleRelease
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           keytool -genkeypair -keystore ci-test.jks -storepass android -keypass android -alias test \
             -keyalg RSA -keysize 2048 -validity 365 -dname "CN=CI test" 2>/dev/null
           "$BT/zipalign" -f -p 4 "$(ls app/build/outputs/apk/release/*.apk | head -1)" aligned.apk
           "$BT/apksigner" sign --ks ci-test.jks --ks-pass pass:android --key-pass pass:android \
             --out app-release-test.apk aligned.apk
+
+      - name: Release AAB and APK
+        run: ./gradlew bundleRelease assembleRelease
 
       - uses: actions/upload-artifact@v4
         with:

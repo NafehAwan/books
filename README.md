@@ -80,8 +80,9 @@ New Play apps use Play App Signing: Google keeps the final signing key, and your
   artifacts (`tiny-motors-debug-apk`, `tiny-motors-release`, `reports`).
 * **Emulator smoke test**: starts an Android 14 emulator and runs `scripts/smoke-test.sh`, which
   installs the app and checks launch → daily gift → Play → drag-merge (a new car arrives) → move →
-  tow → filling the board → process death and resume → Store (Themes, Coins) → Garage → Settings,
-  then a random-tap stress test with animations on. It fails on any crash and uploads the screenshots
+  tow → filling the board → process death and resume → Store (Themes, Coins) → Garage → Settings
+  → PLAY starts a fresh board, then a random-tap stress test with animations on. It runs on the
+  shrunk release APK (with test ads) and then on the debug APK. It fails on any crash and uploads the screenshots
   (`smoke-test-screenshots`).
 
 You can run the same smoke test against your own phone: `scripts/smoke-test.sh app-debug.apk out/`
@@ -156,17 +157,31 @@ analytics SDK is included.
 1. Create an AdMob account (<https://admob.google.com>), add the app (Android), and in
    **App settings** set it as directed to children and the max ad content rating to **G**.
 2. Create two ad units: an **Adaptive banner** and a **Rewarded** ad.
-3. Put the IDs in `gradle.properties` (or `~/.gradle/gradle.properties`):
+3. Give the three IDs to the build. Either:
 
-   ```properties
-   admobAppId=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
-   admobBannerId=ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ
-   admobRewardedId=ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW
-   ```
+   * **On GitHub (no code):** repository **Settings → Secrets and variables → Actions →
+     Variables → New repository variable**, three times:
+
+     | Name | Value (from AdMob) |
+     | --- | --- |
+     | `ADMOB_APP_ID` | App ID, `ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY` |
+     | `ADMOB_BANNER_ID` | Banner ad unit ID, `ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ` |
+     | `ADMOB_REWARDED_ID` | Rewarded ad unit ID, `ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW` |
+
+     The next CI run puts them in the **tiny-motors-release** AAB and APK. (These IDs are not
+     secret; they are inside every copy of the app anyway.)
+   * **On your computer:** add `admobAppId=…`, `admobBannerId=…` and `admobRewardedId=…` to
+     `gradle.properties` (or `~/.gradle/gradle.properties`).
 
    Until you do, every build uses Google's official **test** IDs (they show "Test Ad" and earn
-   nothing). Debug builds always use the test IDs, so you can never click your own real ads.
-4. Link AdMob to your payments profile to get paid.
+   nothing). Debug builds and the CI emulator test always use the test IDs, so neither you nor CI
+   can ever click or load your own real ads by accident (that can get an AdMob account banned).
+4. Link the AdMob app to the Play Store listing once the app is published (AdMob → App settings →
+   **Add app store details**). Until then AdMob serves few or no real ads.
+5. Add an `app-ads.txt` file to the website listed on your Play Store page (AdMob shows the exact
+   one line to paste under **Apps → app-ads.txt**).
+6. Add your payments details in AdMob (**Payments**). AdMob pays monthly once you pass its
+   payment threshold.
 
 ### Ad content filters (keep ads halal-friendly)
 
@@ -253,6 +268,11 @@ checked on the device only; there is no server-side receipt check.
   car drives in (if there is space), and after a tow the board is topped back up to at least 2
   cars. The "Next" panel shows exactly the car that will arrive, and undo takes back the move and
   the car together, so it cannot be used to re-roll.
+* **PLAY always starts a fresh board.** Coins, Garage stickers, the best score, bought themes
+  and extra tow trucks carry over. If the app is closed in the middle of a game, it reopens on that
+  same board.
+* **Screen transitions:** the board zooms in from PLAY, other screens slide in from the right and
+  back out to Home. With the system "Remove animations" setting on they only cross-fade briefly.
 * **Tows:** a new game starts with at least 3 tow trucks, but extra ones from gifts and new cars
   are kept (never more than 5).
 * **Undo** restores the board, score and next car, but never takes back a tow truck earned from a

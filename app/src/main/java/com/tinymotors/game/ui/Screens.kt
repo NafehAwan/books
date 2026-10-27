@@ -131,7 +131,7 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
             // the sky stage: logo, Towy waving from his cloud, cars floating on clouds
             HomeStage(Modifier.weight(1f).fillMaxWidth().widthIn(max = 560.dp))
             // play
-            PlayButton(Modifier.widthIn(max = 380.dp).fillMaxWidth(0.82f).height(100.dp)) { vm.navigate(Screen.Game) }
+            PlayButton(Modifier.widthIn(max = 380.dp).fillMaxWidth(0.82f).height(100.dp)) { vm.play() }
             VSpace(6.dp)
             OutlinedTitle(stringResource(R.string.lets_merge), size = 26f, fill = Palette.HeaderShade, outline = Color.White)
             VSpace(12.dp)
