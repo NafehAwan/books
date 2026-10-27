@@ -44,14 +44,16 @@ adb shell am broadcast -a com.android.systemui.demo -e command network -e wifi s
 
 adb uninstall "$PKG" >/dev/null 2>&1 || true
 adb install "$APK"
+sleep 10   # let the install broadcasts finish before the app starts
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell am start -W -n "$PKG/.MainActivity"
 sleep 5
 
-for i in 1 2 3; do
-  if has "Tap the present"; then tap "Tap the present"; sleep 2; shot gift; tap "OK"; sleep 1; break; fi
+for i in 1 2 3 4; do
+  if has "Tap the present"; then tap "Tap the present"; sleep 2; fi
+  if has "OK"; then shot gift; tap "OK"; sleep 1; break; fi
   sleep 2
 done
 sleep 1; shot home

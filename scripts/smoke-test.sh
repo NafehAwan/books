@@ -19,7 +19,9 @@ report() {
     adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell cat /sdcard/ui.xml \
       | grep -o '\(text\|content-desc\|package\)="[^"]\+"' | sort | uniq -c | head -40 || true
     echo "---- app errors in the device log:"
-    grep -E "ANR in|FATAL EXCEPTION|AndroidRuntime|Process: $PKG|$PKG|System.err|DEBUG +:" "$OUT/logcat.txt" | tail -80 || true
+    grep -E "ANR in|FATAL EXCEPTION|AndroidRuntime|Process: $PKG|$PKG|System.err|DEBUG +:" "$OUT/logcat.txt" \
+      | grep -vE "uiautomator|RuntimeInit uid 2000|default boot image|lock profiling|Shutting down VM|NetworkFactory|ConnectivityService|AiAiEcho|ImeTracker|InputMethodService|CarrierSvc|ImsResolver" \
+      | tail -60 || true
   fi
 }
 trap report EXIT
@@ -53,6 +55,7 @@ for i in 1 2 3; do dismiss_anr; done
 adb uninstall "$PKG" >/dev/null 2>&1 || true
 adb install "$APK"
 adb shell pm clear "$PKG" >/dev/null
+sleep 10   # let the install / clear broadcasts finish before the app starts
 # Keep the UI idle for uiautomator: the app honours "remove animations" by reducing motion.
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
@@ -62,8 +65,11 @@ adb shell am start -W -n "$PKG/.MainActivity"
 sleep 4
 shot 01_home_gift
 
-for i in 1 2 3; do
-  if has "Tap the present"; then tap "Tap the present"; sleep 2; shot 02_gift_open; tap "OK"; sleep 1; break; fi
+# A fresh install makes Android send late package notices that can restart the screen once,
+# swallowing a tap; so try the present a few times and only continue once it has opened.
+for i in 1 2 3 4; do
+  if has "Tap the present"; then tap "Tap the present"; sleep 2; fi
+  if has "OK"; then shot 02_gift_open; tap "OK"; sleep 1; break; fi
   sleep 2
 done
 shot 03_home
