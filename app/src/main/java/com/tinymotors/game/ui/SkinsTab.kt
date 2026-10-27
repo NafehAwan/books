@@ -130,11 +130,11 @@ private fun SkinPreview(skin: Skin, game: GameState, onAction: () -> Unit) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val wide = maxWidth > 520.dp
             val picture = @Composable { modifier: Modifier ->
-                Box(modifier.aspectRatio(1.3f), contentAlignment = Alignment.Center) {
+                Box(modifier.aspectRatio(1.5f), contentAlignment = Alignment.Center) {
                     Canvas(Modifier.fillMaxSize()) { drawStage(colours.glow) }
                     Image(
                         art.skinImage(skin.id), name,
-                        Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, bottom = 22.dp),
+                        Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
                     )
                     if (wearing) {
                         Box(Modifier.fillMaxSize().padding(10.dp), contentAlignment = Alignment.TopEnd) {
@@ -145,15 +145,15 @@ private fun SkinPreview(skin: Skin, game: GameState, onAction: () -> Unit) {
             }
             val info = @Composable { modifier: Modifier ->
                 Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-                    OutlinedTitle(name, size = 26f, fill = Color.White, outline = Palette.HeaderShade)
-                    VSpace(4.dp)
+                    OutlinedTitle(name, size = 24f, fill = Color.White, outline = Palette.HeaderShade)
+                    VSpace(2.dp)
                     Box(
                         Modifier.clip(CircleShape).background(colours.chip).padding(horizontal = 14.dp, vertical = 3.dp),
                     ) { KidText(stringResource(rarityName(skin.rarity)), size = 14f, color = Color.White) }
-                    VSpace(6.dp)
+                    VSpace(4.dp)
                     KidText(stringResource(SKIN_TAGS[skin.id]), size = 16f, color = Palette.Ink)
                     KidText(stringResource(R.string.skin_for_car, carName), size = 13f, color = Palette.InkSoft, bold = false)
-                    VSpace(10.dp)
+                    VSpace(8.dp)
                     if (!unlocked) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Art(R.drawable.ui_lock, Modifier.size(22.dp))
@@ -173,7 +173,7 @@ private fun SkinPreview(skin: Skin, game: GameState, onAction: () -> Unit) {
                 }
             } else {
                 Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    picture(Modifier.widthIn(max = 340.dp).fillMaxWidth())
+                    picture(Modifier.widthIn(max = 280.dp).fillMaxWidth())
                     info(Modifier.fillMaxWidth())
                 }
             }
@@ -184,7 +184,7 @@ private fun SkinPreview(skin: Skin, game: GameState, onAction: () -> Unit) {
 @Composable
 private fun SkinButton(skin: Skin, unlocked: Boolean, owned: Boolean, wearing: Boolean, affordable: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(22.dp)
-    val modifier = Modifier.widthIn(min = 200.dp).height(64.dp)
+    val modifier = Modifier.widthIn(min = 200.dp).height(60.dp)
     when {
         wearing -> ChunkyButton(onClick, Color.White, Palette.ButtonShade, stringResource(R.string.skin_take_off), modifier, shape, depth = 5.dp) {
             KidText(stringResource(R.string.skin_take_off), Modifier.padding(horizontal = 18.dp), size = 19f, color = Palette.HeaderShade)
@@ -313,9 +313,10 @@ private fun DrawScope.drawStage(glow: Color) {
         Brush.radialGradient(listOf(glow, glow.copy(alpha = 0f)), center = Offset(size.width / 2, size.height * 0.45f), radius = size.width * 0.5f),
         radius = size.width * 0.5f, center = Offset(size.width / 2, size.height * 0.45f),
     )
-    val w = size.width * 0.72f
-    val h = size.height * 0.16f
-    val top = size.height * 0.76f
+    // the car picture fills the height; its wheels touch about 80% down, so they stand on the pedestal
+    val w = size.width * 0.62f
+    val h = size.height * 0.15f
+    val top = size.height * 0.74f
     drawOval(Color(0xFFC9D6E6), Offset((size.width - w) / 2, top + h * 0.22f), Size(w, h))
     drawOval(Color(0xFFF1F5FB), Offset((size.width - w) / 2, top), Size(w, h))
     drawStar(Palette.Gold, Offset(size.width * 0.14f, size.height * 0.2f), size.minDimension * 0.05f)
