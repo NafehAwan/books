@@ -39,7 +39,7 @@ dismiss_anr() {
   if adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 && adb shell cat /sdcard/ui.xml | grep -q "t responding"; then
     adb pull /sdcard/ui.xml "$OUT/ui.xml" >/dev/null
     read -r X Y < <(python3 "$HERE/smoke_ui.py" center "$OUT/ui.xml" "Wait") && adb shell input tap "$X" "$Y"
-    echo "dismissed a system 'not responding' dialog"; sleep 2
+    echo "dismissed a system 'not responding' dialog" >&2; sleep 2   # stderr, so $(cars) stays a number
   fi
 }
 # A system "not responding" dialog can pop up again right after it was dismissed, so look a few times.
