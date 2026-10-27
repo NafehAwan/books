@@ -22,6 +22,7 @@ import com.tinymotors.game.engine.GameEvent
 import com.tinymotors.game.engine.GameState
 import com.tinymotors.game.monetize.AdsManager
 import com.tinymotors.game.monetize.BillingManager
+import com.tinymotors.game.notify.Reminders
 import com.tinymotors.game.ui.CarArt
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -72,7 +73,7 @@ data class Effects(val events: List<GameEvent>, val combo: Int = 1)
 class GameViewModel(app: Application, private val saved: SavedStateHandle) : AndroidViewModel(app) {
 
     /** Car pictures, decoded once for the whole app. */
-    val art = CarArt(app)
+    val art = CarArt.load(app)
 
     private val repo = GameRepository(app.dataStore)
 
@@ -273,6 +274,19 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
         return events
     }
 
+    /** Buys car skin [id] with coins and puts it on, or puts an owned skin on / takes it off. */
+    fun buySkin(id: Int): List<GameEvent> {
+        val events = engine.buySkin(id)
+        when (val e = events.firstOrNull()) {
+            is GameEvent.SkinBought -> sound.play(Sfx.Unlock)
+            is GameEvent.SkinWorn -> if (e.on) sound.play(Sfx.Honk, 0.8f) else click()
+            is GameEvent.NotEnoughCoins -> sound.play(Sfx.Tap)
+            else -> Unit
+        }
+        emit(events)
+        return events
+    }
+
     /** Child chose to watch a reward video (at most [REWARDS_PER_DAY] a day). */
     fun watchAd(activity: android.app.Activity) {
         if (adsLeft() <= 0 || !_ui.value.rewardedReady) return
@@ -329,6 +343,7 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     // ---------- settings ----------
 
     fun updateSettings(s: Settings) {
+        if (!s.reminders) Reminders.cancel(getApplication())
         applySettings(s)
         _ui.update { it.copy(settings = s) }
         viewModelScope.launch { repo.saveSettings(s) }
@@ -345,7 +360,10 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
             val old = engine.state
             engine = GameEngine(
                 GameEngine.newGameState(System.nanoTime())
-                    .copy(coins = old.coins, ownedThemes = old.ownedThemes, theme = old.theme),
+                    .copy(
+                        coins = old.coins, ownedThemes = old.ownedThemes, theme = old.theme,
+                        ownedSkins = old.ownedSkins, wornSkins = old.wornSkins,
+                    ),
             )
             combo.reset()
             saved[KEY_WIN] = false
@@ -365,6 +383,8 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     // ---------- lifecycle ----------
 
     fun onForeground() {
+        // The player is back: drop any waiting "come back" notes (new ones are set when they leave).
+        Reminders.cancel(getApplication())
         sound.onForeground()
         ads.start()
         ads.retryRewardedIfIdle()
@@ -375,6 +395,12 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     fun onBackground() {
         sound.onBackground()
         speaker.stop()
+        val st = _ui.value
+        val game = st.game
+        if (st.loaded && st.settings.reminders && game != null) {
+            val app = getApplication<Application>()
+            Reminders.schedule(app, Reminders.notesFor(app.resources, game))
+        }
     }
 
     override fun onCleared() {

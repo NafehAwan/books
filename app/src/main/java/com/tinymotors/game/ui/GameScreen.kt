@@ -194,7 +194,8 @@ fun GameScreen(state: UiState, vm: GameViewModel, particles: ParticleSystem) {
                     say(null, MascotMood.Cheer)
                 }
                 is GameEvent.TowGifted, GameEvent.Undone, is GameEvent.CoinsAdded, is GameEvent.ThemeBought,
-                is GameEvent.ThemeSelected, is GameEvent.NotEnoughCoins -> Unit
+                is GameEvent.ThemeSelected, is GameEvent.NotEnoughCoins,
+                is GameEvent.SkinBought, is GameEvent.SkinWorn -> Unit
             }
             // forget animation requests for cars that are gone
             val alive = vm.ui.value.game?.board?.mapNotNullTo(HashSet()) { it?.id }.orEmpty()

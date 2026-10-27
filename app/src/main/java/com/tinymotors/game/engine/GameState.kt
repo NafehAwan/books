@@ -34,6 +34,10 @@ data class GameState(
     val ownedThemes: Int = 1,
     /** The board theme in use. */
     val theme: Int = 0,
+    /** Bit n is set when car skin n (see [Skins]) is owned. */
+    val ownedSkins: Int = 0,
+    /** Bit n is set when skin n is worn; at most one per car level. */
+    val wornSkins: Int = 0,
 ) {
     init {
         require(board.size == GameRules.SLOTS) { "board must have ${GameRules.SLOTS} slots" }
@@ -43,6 +47,11 @@ data class GameState(
 
     val unlockedCount: Int get() = (Cars.MIN_LEVEL..Cars.MAX_LEVEL).count { isUnlocked(it) }
     fun ownsTheme(id: Int): Boolean = ownedThemes and (1 shl id) != 0
+    fun ownsSkin(id: Int): Boolean = ownedSkins and (1 shl id) != 0
+    fun wearsSkin(id: Int): Boolean = wornSkins and (1 shl id) != 0
+
+    /** The skin worn by car [level], or null for its normal look. */
+    fun skinFor(level: Int): Skin? = Skins.ALL.firstOrNull { it.level == level && wearsSkin(it.id) }
     val carCount: Int get() = board.count { it != null }
     val emptySlots: List<Int> get() = board.indices.filter { board[it] == null }
     val isFull: Boolean get() = board.all { it != null }

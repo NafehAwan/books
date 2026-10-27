@@ -44,6 +44,7 @@ adb shell am broadcast -a com.android.systemui.demo -e command network -e wifi s
 
 adb uninstall "$PKG" >/dev/null 2>&1 || true
 adb install "$APK"
+adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS 2>/dev/null || true  # no reminder question in the pictures
 sleep 10   # let the install broadcasts finish before the app starts
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
@@ -94,7 +95,8 @@ sleep 3; dismiss_anr; shot game
 adb shell input keyevent KEYCODE_BACK; sleep 2
 tap "Garage"; sleep 2; shot garage
 adb shell input keyevent KEYCODE_BACK; sleep 2
-tap "Store"; sleep 2; shot store_themes
+tap "Store"; sleep 2; shot store_skins
+tap "Themes"; sleep 2; shot store_themes
 tap "Coins"; sleep 2; shot store_coins
 adb shell input keyevent KEYCODE_BACK; sleep 2
 tap "Settings"; sleep 2; shot settings

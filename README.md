@@ -6,10 +6,24 @@ up to the Hypercar (2048 points). After every move a new little car drives onto 
 itself. Every new car goes into the Garage sticker book.
 
 Play is unlimited: no lives, timers or "game over". The game earns money in a child-safe way:
-coins (earned by playing, or bought) buy board themes in the Store, small AdMob banners show on the
+coins (earned by playing, or bought) buy car skins and board themes in the Store, small AdMob banners show on the
 Home and Garage screens and in a fixed strip above the game board (never covering it), children can choose to watch a reward video for
 coins, and parents can buy **Remove ads**. Every real-money button sits behind a grown-up gate.
 See **Money: ads and purchases** below.
+
+**Car skins (1.2.0):** 22 new looks, two for every car (Racing Red, Police Patrol, Taxi, Dino Rider,
+Unicorn Dream, Galaxy, ...). Buy one with coins in **Store → Skins** and that car wears it
+everywhere: on the board, in the Garage and in the "New car" moment. Prices go by rarity: Common
+750, Rare 1,000, Epic 1,250, Legendary 1,500 coins. A car's skins unlock once the child has made
+that car, so there is always something to play towards. Owned skins switch on and off for free
+(one per car). Pictures: `tools/process_skin_art.py` cuts them out of the two designs in
+`art-source/ui/`.
+
+**Play reminders (1.2.0):** when the child leaves, up to three friendly local notifications are set
+(present ready after 1 day, "what comes after your best car?" after 3 days, "N mystery cars are
+hiding" after 7 days, each around 5 pm), then they stop until the game is played again. Opening the
+game cancels them. Android 13+ asks for permission once, back on Home after the first game with the
+gift opened. Parents can switch them off in Settings → General. Code: `notify/Reminders.kt`.
 
 ## Install the APK on your phone
 
@@ -80,7 +94,7 @@ New Play apps use Play App Signing: Google keeps the final signing key, and your
   artifacts (`tiny-motors-debug-apk`, `tiny-motors-release`, `reports`).
 * **Emulator smoke test**: starts an Android 14 emulator and runs `scripts/smoke-test.sh`, which
   installs the app and checks launch → daily gift → Play → drag-merge (a new car arrives) → move →
-  tow → filling the board → process death and resume → Store (Themes, Coins) → Garage → Settings
+  tow → filling the board → process death and resume → Store (Skins, Themes, Coins) → Garage → Settings
   → PLAY starts a fresh board, then a random-tap stress test with animations on. It runs on the
   shrunk release APK (with test ads) and then on the debug APK. It fails on any crash and uploads the screenshots
   (`smoke-test-screenshots`).
@@ -140,8 +154,8 @@ How it earns, and how it stays kind:
 
 | | What | Rules in the app |
 | --- | --- | --- |
-| Coins | Earned free: a merge pays the new car's level (1–11), +20 for each new car type, +100 for the Hypercar, +25 with the daily gift, +50 per reward video. Also sold in packs. | Coins only buy board themes. They never buy cars, lives or progress. |
-| Store | Board themes: Sunny Park (free), Beach Day 200, Snow Day 400, Candy Land 600, Night Drive 900 coins. | Cosmetic only. |
+| Coins | Earned free: a merge pays the new car's level (1–11), +20 for each new car type, +100 for the Hypercar, +25 with the daily gift, +50 per reward video. Also sold in packs. | Coins only buy car skins and board themes. They never buy cars, lives or progress. |
+| Store | Car skins: 22, at 750 / 1,000 / 1,250 / 1,500 coins by rarity. Board themes: Sunny Park (free), Beach Day 200, Snow Day 400, Candy Land 600, Night Drive 900 coins. | Cosmetic only. A car's skins unlock once that car has been made. |
 | Reward videos | "Watch an ad: +50 coins", labelled **Ad**. | Always the child's choice, at most 5 a day. |
 | Banners | Small adaptive banner on Home and Garage; a small 320 × 50 banner in its own strip above the game board. | Never covering the board, in dialogs or in Settings. The game strip keeps a fixed size so nothing moves when an ad loads, sits apart from the buttons so it is not tapped by mistake, and stays empty during the first-time tutorial. |
 | Coin packs | `coins_500`, `coins_1500`, `coins_4000` (consumable). | Behind the grown-up gate (hold 3 s), then Google Play's own confirmation. |

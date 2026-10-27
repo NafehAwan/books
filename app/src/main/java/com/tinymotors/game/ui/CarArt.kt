@@ -1,6 +1,7 @@
 package com.tinymotors.game.ui
 
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -10,6 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import com.tinymotors.game.R
 import com.tinymotors.game.engine.Cars
+import com.tinymotors.game.engine.Skins
 
 /** One car's art and colours. Tile colours are generated from the picture by tools/process_art.py. */
 class CarLook(
@@ -21,13 +23,58 @@ class CarLook(
     val edge: Color,
 )
 
-/** Decodes the 11 car pictures once and keeps them for the whole app. */
-class CarArt(context: Context) {
-    private val looks: List<CarLook>
+/**
+ * The car pictures. The 11 base cars are decoded once at start; skin pictures are decoded the first
+ * time they are needed. [withSkins] gives a view in which cars wearing a skin use its picture, so
+ * every screen that draws cars shows the skins.
+ */
+class CarArt private constructor(
+    private val looks: List<CarLook>,
+    private val skins: SkinPictures,
+) {
+    operator fun get(level: Int): CarLook = looks[level.coerceIn(Cars.MIN_LEVEL, Cars.MAX_LEVEL) - 1]
 
-    init {
-        val opts = BitmapFactory.Options().apply { inScaled = false }
-        looks = (Cars.MIN_LEVEL..Cars.MAX_LEVEL).map { level ->
+    val all: List<CarLook> get() = looks
+
+    /** The picture of skin [id] (for the Store). */
+    fun skinImage(id: Int): ImageBitmap = skins[id]
+
+    /** The same art, with each car wearing the skin set in [wornSkins] (bits by skin id). */
+    fun withSkins(wornSkins: Int): CarArt {
+        if (wornSkins == 0) return CarArt(skins.base, skins)
+        val looks = skins.base.map { look ->
+            val skin = Skins.ALL.firstOrNull { it.level == look.level && wornSkins and (1 shl it.id) != 0 }
+            if (skin == null) look else CarLook(look.level, skins[skin.id], look.nameRes, look.main, look.tile, look.edge)
+        }
+        return CarArt(looks, skins)
+    }
+
+    /** Lazily decoded skin pictures, shared by every [CarArt] view. */
+    private class SkinPictures(private val res: Resources, val base: List<CarLook>) {
+        private val cache = arrayOfNulls<ImageBitmap>(Skins.COUNT)
+
+        operator fun get(id: Int): ImageBitmap {
+            cache[id]?.let { return it }
+            val opts = BitmapFactory.Options().apply { inScaled = false }
+            val bmp = SKIN_IMAGES.getOrNull(id)?.let { BitmapFactory.decodeResource(res, it, opts) }
+                ?: placeholder(0xFFB0B8C8.toInt())
+            return bmp.asImageBitmap().also {
+                it.prepareToDraw()
+                cache[id] = it
+            }
+        }
+    }
+
+    companion object {
+        /** Decodes the 11 base car pictures; call once for the whole app. */
+        fun load(context: Context): CarArt {
+            val looks = decodeBase(context)
+            return CarArt(looks, SkinPictures(context.applicationContext.resources, looks))
+        }
+
+        private fun decodeBase(context: Context): List<CarLook> {
+            val opts = BitmapFactory.Options().apply { inScaled = false }
+            return (Cars.MIN_LEVEL..Cars.MAX_LEVEL).map { level ->
             val i = level - 1
             val main = ContextCompat.getColor(context, MAIN[i])
             val bmp = BitmapFactory.decodeResource(context.resources, IMAGES[i], opts) ?: placeholder(main)
@@ -39,14 +86,9 @@ class CarArt(context: Context) {
                 tile = Color(ContextCompat.getColor(context, TILE[i])),
                 edge = Color(ContextCompat.getColor(context, EDGE[i])),
             )
+            }
         }
-    }
 
-    operator fun get(level: Int): CarLook = looks[level.coerceIn(Cars.MIN_LEVEL, Cars.MAX_LEVEL) - 1]
-
-    val all: List<CarLook> get() = looks
-
-    companion object {
         /** Simple drawn car, used only if a picture cannot be decoded. */
         fun placeholder(color: Int): android.graphics.Bitmap {
             val size = 256
@@ -66,6 +108,16 @@ class CarArt(context: Context) {
             c.drawCircle(178f, 182f, 10f, p)
             return bmp
         }
+
+        /** Skin pictures in [Skins.ALL] order (skin id = index). */
+        val SKIN_IMAGES = intArrayOf(
+            R.drawable.skin_racing_red, R.drawable.skin_cow, R.drawable.skin_police, R.drawable.skin_bunny,
+            R.drawable.skin_taxi, R.drawable.skin_kitty, R.drawable.skin_mint, R.drawable.skin_dino,
+            R.drawable.skin_stars, R.drawable.skin_flower_van, R.drawable.skin_santa, R.drawable.skin_crown,
+            R.drawable.skin_rescue, R.drawable.skin_pumpkin, R.drawable.skin_pink_bow, R.drawable.skin_unicorn,
+            R.drawable.skin_rally, R.drawable.skin_rainbow, R.drawable.skin_night, R.drawable.skin_neon,
+            R.drawable.skin_galaxy, R.drawable.skin_champion,
+        )
 
         val IMAGES = intArrayOf(
             R.drawable.car_01_kei, R.drawable.car_02_city_hatch, R.drawable.car_03_retro_bug,

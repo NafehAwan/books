@@ -29,7 +29,9 @@ fun TinyMotorsApp(vm: GameViewModel, reduceMotion: Boolean) {
     val state by vm.ui.collectAsStateWithLifecycle()
     val particles = remember { ParticleSystem() }
     val theme = BoardThemes[(state.game?.theme ?: 0).coerceIn(0, BoardThemes.size - 1)]
-    CompositionLocalProvider(LocalCarArt provides vm.art, LocalReduceMotion provides reduceMotion, LocalBoardTheme provides theme) {
+    val worn = state.game?.wornSkins ?: 0
+    val art = remember(vm.art, worn) { vm.art.withSkins(worn) }
+    CompositionLocalProvider(LocalCarArt provides art, LocalReduceMotion provides reduceMotion, LocalBoardTheme provides theme) {
         // Back goes to the home screen; on the home screen it leaves the app as usual.
         BackHandler(enabled = state.screen != Screen.Home) { vm.back() }
         if (!state.loaded) {

@@ -115,6 +115,69 @@
         <item quantity="other">Need %1$d more coins</item>
     </plurals>
     <string name="theme_bought">New theme!</string>
+    <!-- Car skins -->
+    <string name="tab_skins">Skins</string>
+    <string name="rarity_all">All</string>
+    <string name="rarity_common">Common</string>
+    <string name="rarity_rare">Rare</string>
+    <string name="rarity_epic">Epic</string>
+    <string name="rarity_legendary">Legendary</string>
+    <string name="skin_buy">Buy</string>
+    <string name="skin_use">Use</string>
+    <string name="skin_using">Using</string>
+    <string name="skin_take_off">Normal look</string>
+    <string name="skin_owned">Owned</string>
+    <string name="skin_bought">New skin! Look at your car!</string>
+    <string name="skin_on">Your car looks great!</string>
+    <string name="skin_off">Back to the normal look.</string>
+    <string name="skin_for_car">For the %1$s</string>
+    <string name="skin_find_car">Make the %1$s to unlock!</string>
+    <string name="skin_find_car_short">Find it!</string>
+    <string name="skins_collected">Skins: %1$d of %2$d</string>
+    <string name="skinname_racing_red">Racing Red</string>
+    <string name="skintag_racing_red">A classic favorite!</string>
+    <string name="skinname_cow">Moo Car</string>
+    <string name="skintag_cow">Moo! Off to the farm!</string>
+    <string name="skinname_police">Police Patrol</string>
+    <string name="skintag_police">Nee-naw! Keeping roads safe.</string>
+    <string name="skinname_bunny">Bunny Hop</string>
+    <string name="skintag_bunny">Hop hop, away we go!</string>
+    <string name="skinname_taxi">Taxi</string>
+    <string name="skintag_taxi">A stylish ride for the city!</string>
+    <string name="skinname_kitty">Kitty Cruiser</string>
+    <string name="skintag_kitty">Purr-fectly fast!</string>
+    <string name="skinname_mint">Mint Flowers</string>
+    <string name="skintag_mint">Fresh as a spring day.</string>
+    <string name="skinname_dino">Dino Rider</string>
+    <string name="skintag_dino">Roar! A ride from long ago.</string>
+    <string name="skinname_stars">Starry Purple</string>
+    <string name="skintag_stars">Shine bright like a star!</string>
+    <string name="skinname_flower_van">Flower Van</string>
+    <string name="skintag_flower_van">Peace, love and flowers!</string>
+    <string name="skinname_santa">Santa Express</string>
+    <string name="skintag_santa">Ho-ho-ho! Presents for all!</string>
+    <string name="skinname_crown">Royal Gold</string>
+    <string name="skintag_crown">A ride fit for a king or queen!</string>
+    <string name="skinname_rescue">Rescue Truck</string>
+    <string name="skintag_rescue">Here to help, day or night!</string>
+    <string name="skinname_pumpkin">Pumpkin Patch</string>
+    <string name="skintag_pumpkin">Spooky and silly!</string>
+    <string name="skinname_pink_bow">Pretty in Pink</string>
+    <string name="skintag_pink_bow">Bows make everything better!</string>
+    <string name="skinname_unicorn">Unicorn Dream</string>
+    <string name="skintag_unicorn">Magic sparkles on wheels!</string>
+    <string name="skinname_rally">Rally Racer</string>
+    <string name="skintag_rally">Built for mud and speed!</string>
+    <string name="skinname_rainbow">Rainbow Rocket</string>
+    <string name="skintag_rainbow">Every color, all at once!</string>
+    <string name="skinname_night">Night Racer</string>
+    <string name="skintag_night">Fast and fierce in the dark.</string>
+    <string name="skinname_neon">Neon Glow</string>
+    <string name="skintag_neon">Lights up the whole road!</string>
+    <string name="skinname_galaxy">Galaxy</string>
+    <string name="skintag_galaxy">Zoom past the planets!</string>
+    <string name="skinname_champion">Champion</string>
+    <string name="skintag_champion">For the speed lovers!</string>
     <string name="earn_coins">Earn coins by merging cars!</string>
     <string name="watch_ad">Watch an ad</string>
     <plurals name="watch_ad_reward">
@@ -163,4 +226,24 @@
         <item quantity="one">Undo, %1$d left</item>
         <item quantity="other">Undo, %1$d left</item>
     </plurals>
+    <!-- Reminder notifications -->
+    <string name="remind_channel">Play reminders</string>
+    <string name="remind_channel_sub">A friendly note when a present is ready. At most 3, then they stop until the game is played again.</string>
+    <string name="remind_gift_title">Your present is ready! 🎁</string>
+    <string name="remind_gift_text">Towy wrapped a surprise for you. Come and open it!</string>
+    <string name="remind_next_title">What comes after the %1$s? 🤔</string>
+    <string name="remind_next_text">Merge two of them to find a brand-new car!</string>
+    <string name="remind_best_title">Can you beat your best score? 🏆</string>
+    <plurals name="remind_best_text">
+        <item quantity="one">Your best is %1$d point. Towy thinks you can do it!</item>
+        <item quantity="other">Your best is %1$d points. Towy thinks you can do it!</item>
+    </plurals>
+    <string name="remind_miss_title">Towy misses you! 🚗</string>
+    <plurals name="remind_miss_hidden">
+        <item quantity="one">%1$d mystery car is still hiding in your Garage.</item>
+        <item quantity="other">%1$d mystery cars are still hiding in your Garage.</item>
+    </plurals>
+    <string name="remind_miss_all">Your cars are ready for a new race!</string>
+    <string name="set_reminders">Reminders</string>
+    <string name="set_reminders_sub">A friendly note when a present is ready (3 at most, then they stop)</string>
 </resources>

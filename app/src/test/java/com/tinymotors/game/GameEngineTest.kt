@@ -4,8 +4,10 @@ import com.tinymotors.game.engine.Cars
 import com.tinymotors.game.engine.GameEngine
 import com.tinymotors.game.engine.GameEvent
 import com.tinymotors.game.engine.GameRules
+import com.tinymotors.game.engine.GameStateCodec
 import com.tinymotors.game.engine.Rng
 import com.tinymotors.game.engine.Shop
+import com.tinymotors.game.engine.Skins
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -383,5 +385,69 @@ class GameEngineTest {
         assertEquals(1000L - Shop.THEME_PRICES[2], e.state.coins)
         assertTrue(e.state.ownsTheme(2))
         assertEquals(2, e.state.theme)
+    }
+
+    // ---------- car skins ----------
+
+    @Test fun `skins cost coins and are worn right away`() {
+        val e = classic(stateWith(listOf(1)))
+        val taxi = Skins.ALL.first { it.key == "taxi" }
+        assertEquals(listOf(GameEvent.NotEnoughCoins(taxi.price.toLong())), e.buySkin(taxi.id))
+        e.addCoins(taxi.price + 7)
+        assertEquals(listOf(GameEvent.SkinBought(taxi.id)), e.buySkin(taxi.id))
+        assertEquals(7L, e.state.coins)
+        assertTrue(e.state.ownsSkin(taxi.id))
+        assertEquals(taxi, e.state.skinFor(taxi.level))
+        assertNull(e.state.skinFor(1))
+        assertTrue(e.buySkin(99).isEmpty())
+    }
+
+    @Test fun `owned skins switch on and off for free, one per car`() {
+        val e = classic(stateWith(listOf(1)))
+        val (police, bunny) = Skins.ALL.filter { it.level == 2 }
+        e.addCoins(police.price + bunny.price)
+        e.buySkin(police.id)
+        e.buySkin(bunny.id) // same car: bunny replaces police
+        assertEquals(bunny, e.state.skinFor(2))
+        assertFalse(e.state.wearsSkin(police.id))
+        assertEquals(listOf(GameEvent.SkinWorn(police.id, on = true)), e.buySkin(police.id))
+        assertEquals(police, e.state.skinFor(2))
+        assertEquals(listOf(GameEvent.SkinWorn(police.id, on = false)), e.buySkin(police.id))
+        assertNull(e.state.skinFor(2)) // back to the normal City hatch
+        assertEquals(0L, e.state.coins) // switching never costs
+        assertTrue(e.toggleSkin(Skins.ALL.first { it.key == "galaxy" }.id).isEmpty()) // not owned
+    }
+
+    @Test fun `skins survive a new game and a save`() {
+        val e = classic(stateWith(listOf(1)))
+        e.addCoins(5000)
+        val dino = Skins.ALL.first { it.key == "dino" }
+        val neon = Skins.ALL.first { it.key == "neon" }
+        e.buySkin(dino.id)
+        e.buySkin(neon.id)
+        e.buySkin(neon.id) // owned but taken off
+        e.newGame(seed = 9)
+        assertTrue(e.state.ownsSkin(dino.id) && e.state.ownsSkin(neon.id))
+        assertEquals(dino, e.state.skinFor(dino.level))
+        assertNull(e.state.skinFor(neon.level))
+        assertEquals(e.state, GameStateCodec.decode(GameStateCodec.encode(e.state)))
+    }
+
+    @Test fun `damaged skin data is cleaned when loading`() {
+        val text = GameStateCodec.encode(classic(stateWith(listOf(1))).state)
+        val (police, bunny) = Skins.ALL.filter { it.level == 2 }
+        val owned = (1 shl police.id) or (1 shl bunny.id) or (1 shl 30) // bit 30: no such skin
+        val worn = (1 shl police.id) or (1 shl bunny.id) or (1 shl 5)   // two on one car, one not owned
+        val decoded = GameStateCodec.decode(
+            text.replace("skins=0", "skins=$owned").replace("worn=0", "worn=$worn"),
+        )!!
+        assertEquals((1 shl police.id) or (1 shl bunny.id), decoded.ownedSkins)
+        assertEquals(1 shl police.id, decoded.wornSkins)
+    }
+
+    @Test fun `every car has skins and skin ids match their place`() {
+        for (level in Cars.MIN_LEVEL..Cars.MAX_LEVEL) assertTrue(Skins.ALL.any { it.level == level })
+        Skins.ALL.forEachIndexed { i, s -> assertEquals(i, s.id) }
+        assertTrue(Skins.COUNT <= 31)
     }
 }

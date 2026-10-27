@@ -75,14 +75,14 @@ import com.tinymotors.game.ui.theme.Palette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private enum class StoreTab { Themes, Coins }
+private enum class StoreTab { Skins, Themes, Coins }
 
 @Composable
 fun StoreScreen(state: UiState, vm: GameViewModel) {
     val game = state.game ?: return
     val res = LocalResources.current
     val activity = LocalActivity.current
-    var tab by rememberSaveable { mutableStateOf(StoreTab.Themes) }
+    var tab by rememberSaveable { mutableStateOf(StoreTab.Skins) }
     var note by remember { mutableStateOf<String?>(null) }
     var gateFor by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(note) {
@@ -109,6 +109,10 @@ fun StoreScreen(state: UiState, vm: GameViewModel) {
             }
             VSpace(12.dp)
             Row(Modifier.widthIn(max = 640.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StoreTabPill(stringResource(R.string.tab_skins), R.drawable.car_02_city_hatch, tab == StoreTab.Skins, Modifier.weight(1f)) {
+                    tab = StoreTab.Skins
+                    vm.click()
+                }
                 StoreTabPill(stringResource(R.string.tab_themes), R.drawable.ui_palette, tab == StoreTab.Themes, Modifier.weight(1f)) {
                     tab = StoreTab.Themes
                     vm.click()
@@ -128,6 +132,15 @@ fun StoreScreen(state: UiState, vm: GameViewModel) {
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 when (tab) {
+                    StoreTab.Skins -> SkinsTab(game, vm::click) { id ->
+                        val events = vm.buySkin(id)
+                        note = when (val e = events.firstOrNull()) {
+                            is GameEvent.NotEnoughCoins -> res.getQuantityString(R.plurals.need_more_coins, e.missing.toInt(), e.missing.toInt())
+                            is GameEvent.SkinBought -> res.getString(R.string.skin_bought)
+                            is GameEvent.SkinWorn -> res.getString(if (e.on) R.string.skin_on else R.string.skin_off)
+                            else -> null
+                        }
+                    }
                     StoreTab.Themes -> ThemesTab(game.coins, game.theme, { game.ownsTheme(it) }) { id ->
                         val events = vm.buyTheme(id)
                         note = when (val e = events.firstOrNull()) {
@@ -188,11 +201,11 @@ private fun StoreTabPill(label: String, icon: Int, selected: Boolean, modifier: 
         depth = 4.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(30.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(28.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
                 Art(icon, Modifier.size(24.dp))
             }
-            HSpace(8.dp)
-            KidText(label, size = 18f, color = if (selected) Color.White else Palette.HeaderShade)
+            HSpace(6.dp)
+            KidText(label, size = 16f, color = if (selected) Color.White else Palette.HeaderShade)
         }
     }
 }

@@ -24,6 +24,8 @@ object GameStateCodec {
         line("coins", s.coins)
         line("themes", s.ownedThemes)
         line("theme", s.theme)
+        line("skins", s.ownedSkins)
+        line("worn", s.wornSkins)
     }
 
     /** Returns null for missing, unknown or damaged data (the app then starts a new game). */
@@ -50,7 +52,8 @@ object GameStateCodec {
                 ownedThemes = (map["themes"]?.toInt() ?: 1) or 1,
                 theme = map["theme"]?.toInt()?.coerceIn(0, Shop.THEME_COUNT - 1) ?: 0,
             )
-            state
+            val owned = (map["skins"]?.toInt() ?: 0) and Skins.ALL_BITS
+            state.copy(ownedSkins = owned, wornSkins = Skins.cleanWorn(map["worn"]?.toInt() ?: 0, owned))
         } catch (e: IllegalArgumentException) {
             null
         } catch (e: NoSuchElementException) {

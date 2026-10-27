@@ -25,6 +25,8 @@
 > 📒 A Garage sticker book that fills up with every new car. Tap a sticker to hear it honk and say
 > its name
 > 🛻 Towy the friendly tow truck peeks over the board, cheers you on and gives gentle hints
+> 🎨 22 fun car skins to collect: Police Patrol, Taxi, Dino Rider, Bunny Hop, Unicorn Dream, Galaxy
+> and more
 > 🪙 Earn coins by merging and decorate your board with themes: Beach Day, Snow Day, Candy Land and
 > Night Drive
 > 🎁 A little present every day, with no streaks and nothing lost if you miss a day
@@ -85,6 +87,7 @@ Check it against Google's current AdMob guidance before you submit
   as not collected, so it does not need to be declared; check the current Play Console help page
   ("Data safety section") when you fill in the form.
 * Purchases: handled by Google Play; the app does not collect payment info or purchase history.
+* Play reminders are local notifications made on the device; nothing is collected for them.
 * Privacy policy URL: the public URL where you host `PRIVACY_POLICY.md`.
 
 ## In-app products to create in Play Console (Monetize → Products → In-app products)

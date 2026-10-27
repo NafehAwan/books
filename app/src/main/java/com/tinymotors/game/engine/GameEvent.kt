@@ -21,4 +21,6 @@ sealed interface GameEvent {
     data class ThemeBought(val id: Int) : GameEvent
     data class ThemeSelected(val id: Int) : GameEvent
     data class NotEnoughCoins(val missing: Long) : GameEvent
+    data class SkinBought(val id: Int) : GameEvent
+    data class SkinWorn(val id: Int, val on: Boolean) : GameEvent
 }

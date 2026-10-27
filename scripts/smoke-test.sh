@@ -136,6 +136,10 @@ shot 09_full_board
 # Process death: background, kill, relaunch -> same board.
 adb shell input keyevent KEYCODE_HOME
 sleep 2
+# Leaving the game sets up the three "come back and play" reminders (1, 3 and 7 days).
+REMINDERS=$(adb shell dumpsys alarm | grep -c "SHOW_REMINDER" || true)
+echo "reminder alarms waiting: $REMINDERS"
+test "$REMINDERS" -ge 3 || { adb shell dumpsys alarm | grep -B2 -A6 "$PKG" | head -40; echo "FAIL: reminders were not scheduled"; exit 1; }
 adb shell am kill "$PKG"
 sleep 1
 adb shell am start -W -n "$PKG/.MainActivity"
@@ -145,8 +149,16 @@ echo "cars after process death: $RESUMED"
 test "$RESUMED" -eq 30 || { echo "FAIL: board not restored after process death"; exit 1; }
 shot 10_resumed
 
-adb shell input keyevent KEYCODE_BACK; sleep 1
-tap "Store"; sleep 2; shot 11_store_themes
+adb shell input keyevent KEYCODE_BACK; sleep 3
+# Back home after a first game: Android 13+ asks once whether reminders may be shown.
+if has "Allow"; then shot 10b_reminder_question; tap "Allow"; sleep 1; else echo "no reminder question (older Android or asked before)"; fi
+REMINDERS=$(adb shell dumpsys alarm | grep -c "SHOW_REMINDER" || true)
+echo "reminder alarms while playing: $REMINDERS"
+test "$REMINDERS" -eq 0 || { echo "FAIL: reminders should be cancelled while the game is open"; exit 1; }
+tap "Store"; sleep 2; shot 11_store_skins
+tap "Moo Car"; sleep 1; shot 11b_skin_picked
+has "Make the Kei car to unlock!" && { echo "FAIL: the first car's skins should not be locked"; exit 1; }
+tap "Themes"; sleep 2; shot 11c_store_themes
 tap "Coins"; sleep 2; shot 12_store_coins
 adb shell input keyevent KEYCODE_BACK; sleep 1
 tap "Garage"; sleep 2; shot 13_garage
@@ -177,6 +189,7 @@ LOCAL=$(adb shell bmgr list transports | tr -d '\r* ' | grep -m1 localtransport 
 adb shell bmgr backupnow "$PKG" | tail -2
 adb uninstall "$PKG" >/dev/null
 adb install "$APK" >/dev/null
+adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS 2>/dev/null || true
 adb shell bmgr restore "$PKG" | tail -1 || true
 sleep 3
 adb shell am start -W -n "$PKG/.MainActivity" >/dev/null

@@ -13,3 +13,4 @@ keystore.properties
 tools/out/
 site/
 promo/
+tools/__pycache__/

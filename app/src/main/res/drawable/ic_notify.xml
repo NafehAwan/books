@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small white car for the status bar (notifications). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- cabin with two windows, and the body -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M6,10L8.2,5.5H15.3L18.2,10Z M8.4,9.2L9.3,6.9H11.4V9.2Z M12.6,9.2V6.9H14.6L16,9.2Z M4,10H20A2,2 0,0 1,22 12V15A1,1 0,0 1,21 16H3A1,1 0,0 1,2 15V12A2,2 0,0 1,4 10Z" />
+    <!-- wheels -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4.5,16.5a2.5,2.5 0,1 0,5 0a2.5,2.5 0,1 0,-5 0z M14.5,16.5a2.5,2.5 0,1 0,5 0a2.5,2.5 0,1 0,-5 0z" />
+</vector>

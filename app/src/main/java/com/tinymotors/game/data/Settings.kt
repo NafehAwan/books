@@ -7,4 +7,6 @@ data class Settings(
     val vibration: Boolean = true,
     val voice: Boolean = true,
     val hints: Boolean = true,
+    /** Friendly "come back" notifications (see notify/Reminders). */
+    val reminders: Boolean = true,
 )

@@ -1,13 +1,13 @@
 # Tiny Motors privacy policy
 
-_Last updated: 27 October 2026 (Android backup of game progress)_
+_Last updated: 27 October 2026 (car skins, play reminders)_
 
 Tiny Motors is a game for children aged 5 to 10. We (the developer) do not collect, store on any
 server, sell or share any personal information about children or parents.
 
 ## Game progress (saved on the device, backed up by Android)
 
-The game board, scores, coins, unlocked cars, bought themes, settings, the date of the last daily
+The game board, scores, coins, unlocked cars, bought themes and car skins, settings, the date of the last daily
 gift, how many reward videos were watched today, whether the tutorial was seen and whether "Remove
 ads" was bought are saved **on the device**, so the child can continue where they left off.
 
@@ -56,6 +56,16 @@ them. Coins can also be earned for free by playing.
 * No analytics or crash-reporting SDKs.
 * No links that lead out of the app, apart from what an ad itself may open after a tap.
 * Car names are read aloud with the device's own text-to-speech engine, on the device.
+
+## Play reminders (notifications)
+
+When the child leaves the game, it can show up to three friendly notes on the phone: a present is
+ready (the next day), what car comes next (3 days later) and how many mystery cars are still hiding
+(7 days later), each around 5 pm. Then nothing more is sent until the game is played again. These
+notes are made **on the device** from the saved game; nothing is sent to or from a server, and they
+never mention purchases or ads. On Android 13 and newer the phone asks first whether the app may
+show notifications. Parents can switch reminders off in **Settings → General → Reminders** or in
+the phone's notification settings.
 
 ## Contact
 

@@ -44,6 +44,7 @@ class GameRepository(private val store: DataStore<Preferences>) {
                 vibration = p[VIBRATION] ?: true,
                 voice = p[VOICE] ?: true,
                 hints = p[HINTS] ?: true,
+                reminders = p[REMINDERS] ?: true,
             ),
             giftDay = p[GIFT_DAY] ?: DailyGift.NEVER,
             tutorialSeen = p[TUTORIAL] ?: false,
@@ -79,6 +80,7 @@ class GameRepository(private val store: DataStore<Preferences>) {
             it[VIBRATION] = s.vibration
             it[VOICE] = s.voice
             it[HINTS] = s.hints
+            it[REMINDERS] = s.reminders
         }
     }
 
@@ -116,6 +118,7 @@ class GameRepository(private val store: DataStore<Preferences>) {
         val VIBRATION = booleanPreferencesKey("vibration")
         val VOICE = booleanPreferencesKey("voice")
         val HINTS = booleanPreferencesKey("hints")
+        val REMINDERS = booleanPreferencesKey("reminders")
         val GIFT_DAY = intPreferencesKey("gift_day")
         val TUTORIAL = booleanPreferencesKey("tutorial_seen")
         val ADS_REMOVED = booleanPreferencesKey("ads_removed")

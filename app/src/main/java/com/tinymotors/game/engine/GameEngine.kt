@@ -154,7 +154,40 @@ class GameEngine(initial: GameState, private val autoSpawn: Boolean = true) {
         return listOf(GameEvent.ThemeSelected(id))
     }
 
-    /** Starts a fresh board. Best score, unlocked cars, coins, themes and extra tows are kept. */
+    /** Buys skin [id] with coins and puts it on, or (when already owned) puts it on or takes it off. */
+    fun buySkin(id: Int): List<GameEvent> {
+        val skin = Skins[id] ?: return emptyList()
+        if (state.ownsSkin(id)) return toggleSkin(id)
+        val price = skin.price.toLong()
+        if (state.coins < price) return listOf(GameEvent.NotEnoughCoins(price - state.coins))
+        state = state.copy(
+            coins = state.coins - price,
+            ownedSkins = state.ownedSkins or (1 shl id),
+            wornSkins = wearOnly(skin),
+        )
+        return listOf(GameEvent.SkinBought(id))
+    }
+
+    /** Puts an owned skin on (taking off the car's other skin) or takes it off again. */
+    fun toggleSkin(id: Int): List<GameEvent> {
+        val skin = Skins[id] ?: return emptyList()
+        if (!state.ownsSkin(id)) return emptyList()
+        return if (state.wearsSkin(id)) {
+            state = state.copy(wornSkins = state.wornSkins and (1 shl id).inv())
+            listOf(GameEvent.SkinWorn(id, on = false))
+        } else {
+            state = state.copy(wornSkins = wearOnly(skin))
+            listOf(GameEvent.SkinWorn(id, on = true))
+        }
+    }
+
+    private fun wearOnly(skin: Skin): Int {
+        var worn = state.wornSkins
+        for (other in Skins.ALL) if (other.level == skin.level) worn = worn and (1 shl other.id).inv()
+        return worn or (1 shl skin.id)
+    }
+
+    /** Starts a fresh board. Best score, unlocked cars, coins, themes, skins and extra tows are kept. */
     fun newGame(seed: Long): List<GameEvent> {
         state = newGameState(seed, state)
         return listOf(GameEvent.NewGame)
@@ -287,6 +320,8 @@ class GameEngine(initial: GameState, private val autoSpawn: Boolean = true) {
                 coins = previous?.coins ?: 0,
                 ownedThemes = previous?.ownedThemes ?: 1,
                 theme = previous?.theme ?: 0,
+                ownedSkins = previous?.ownedSkins ?: 0,
+                wornSkins = previous?.wornSkins ?: 0,
             )
         }
     }

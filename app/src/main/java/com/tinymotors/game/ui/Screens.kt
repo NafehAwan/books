@@ -61,14 +61,17 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.tinymotors.game.GameViewModel
 import com.tinymotors.game.R
 import com.tinymotors.game.Screen
 import com.tinymotors.game.UiState
 import com.tinymotors.game.engine.Cars
 import com.tinymotors.game.engine.GameRules
+import com.tinymotors.game.notify.Reminders
 import com.tinymotors.game.ui.theme.LocalReduceMotion
 import com.tinymotors.game.ui.theme.Palette
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.abs
@@ -101,6 +104,17 @@ fun HomeScreen(state: UiState, vm: GameViewModel) {
     var showGift by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.giftAvailable, state.loaded) {
         if (state.giftAvailable && state.loaded) showGift = true
+    }
+    // Ask once for the play reminders, at a calm moment: back home after a first game, gift opened.
+    val context = LocalContext.current
+    val askReminders = rememberReminderAsk()
+    LaunchedEffect(state.loaded, state.tutorialSeen, state.giftAvailable, showGift) {
+        if (state.loaded && state.tutorialSeen && !state.giftAvailable && !showGift && state.settings.reminders &&
+            Reminders.needsPermission(context) && !Reminders.askedBefore(context)
+        ) {
+            delay(900)
+            askReminders()
+        }
     }
     Box(Modifier.fillMaxSize()) {
         SkyBackground(scenery = true, groundFraction = 0.79f)
@@ -517,6 +531,7 @@ fun SettingsScreen(state: UiState, vm: GameViewModel) {
     var tab by rememberSaveable { mutableStateOf(SettingsTab.General) }
     var resetGameDone by remember { mutableStateOf(false) }
     var startOverDone by remember { mutableStateOf(false) }
+    val askReminders = rememberReminderAsk(openSettings = true)
     Box(Modifier.fillMaxSize()) {
         SkyBackground(scenery = true, groundFraction = 0.9f)
         Column(
@@ -544,6 +559,10 @@ fun SettingsScreen(state: UiState, vm: GameViewModel) {
                     SettingsTab.General -> {
                         SettingToggle(R.drawable.ui_vibrate, stringResource(R.string.set_vibration), stringResource(R.string.set_vibration_sub), s.vibration) { vm.updateSettings(s.copy(vibration = it)) }
                         SettingToggle(R.drawable.ui_star_small, stringResource(R.string.set_hints), stringResource(R.string.set_hints_sub), s.hints) { vm.updateSettings(s.copy(hints = it)) }
+                        SettingToggle(R.drawable.ui_gift, stringResource(R.string.set_reminders), stringResource(R.string.set_reminders_sub), s.reminders) {
+                            vm.updateSettings(s.copy(reminders = it))
+                            if (it) askReminders()
+                        }
                         HoldRow(
                             icon = R.drawable.ui_refresh,
                             title = stringResource(R.string.reset_game),
