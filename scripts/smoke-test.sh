@@ -2,7 +2,7 @@
 # Smoke test on a connected phone or emulator (adb must see exactly one device).
 #   scripts/smoke-test.sh [app-debug.apk] [output-dir]
 # Installs a fresh copy, then: launch -> daily gift -> Play -> drag-merge -> move -> tow ->
-# fill the board -> process death + resume -> Store -> Garage -> Settings -> random-tap stress test. Saves screenshots and
+# fill the board -> process death + resume -> Store -> Garage -> Settings -> PLAY starts fresh -> random-tap stress test. Saves screenshots and
 # fails if the app crashes or the game does not react.
 set -euo pipefail
 APK=${1:-app/build/outputs/apk/debug/app-debug.apk}
@@ -134,7 +134,6 @@ adb shell am kill "$PKG"
 sleep 1
 adb shell am start -W -n "$PKG/.MainActivity"
 sleep 4
-if has "Play"; then tap "Play"; sleep 2; fi
 RESUMED=$(cars)
 echo "cars after process death: $RESUMED"
 test "$RESUMED" -eq 30 || { echo "FAIL: board not restored after process death"; exit 1; }
@@ -147,6 +146,13 @@ adb shell input keyevent KEYCODE_BACK; sleep 1
 tap "Garage"; sleep 2; shot 13_garage
 adb shell input keyevent KEYCODE_BACK; sleep 1
 tap "Settings"; sleep 2; shot 14_settings
+adb shell input keyevent KEYCODE_BACK; sleep 1
+
+# PLAY always starts a fresh board.
+tap "Play"; sleep 2
+FRESH=$(cars)
+echo "cars after PLAY: $FRESH"
+test "$FRESH" -eq 7 || { echo "FAIL: PLAY should start a new game with 7 cars"; exit 1; }
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 # Animations back on, then a random-tap stress test inside the app.

@@ -199,11 +199,21 @@ class GameViewModel(app: Application, private val saved: SavedStateHandle) : And
     }
 
     fun newGame() {
+        startNewBoard()
+        click()
+    }
+
+    /** PLAY on the home screen always starts a fresh board. Coins, Garage cars, best score and themes stay. */
+    fun play() {
+        startNewBoard()
+        navigate(Screen.Game)
+    }
+
+    private fun startNewBoard() {
         engine.newGame(System.nanoTime())
         combo.reset()
         saved[KEY_WIN] = false
         _ui.update { it.copy(showWin = false) }
-        click()
         emit(listOf(GameEvent.NewGame))
     }
 

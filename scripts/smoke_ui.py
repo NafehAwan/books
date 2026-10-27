@@ -2,7 +2,7 @@
 """Helpers for scripts/smoke-test.sh: reads a `uiautomator dump` XML file.
 
   smoke_ui.py center <xml> <content-desc>      -> "x y" of the first node whose description starts with it
-  smoke_ui.py pair <xml>                         -> "x1 y1 x2 y2" of two board cars with the same name
+  smoke_ui.py pair <xml>                         -> "x1 y1 x2 y2" of the lowest two board cars with the same name
   smoke_ui.py cars <xml>                         -> number of cars on the board
   smoke_ui.py count <xml> <content-desc>         -> number of nodes with exactly that description
   smoke_ui.py anycar <xml>                       -> "x y" of the first car on the board
@@ -44,12 +44,12 @@ def main():
             sys.exit("no cars")
         print(*cars[0][1])
     elif cmd == "pair":
-        seen = {}
-        for d, c in cars:
-            if d in seen and d != "Hypercar":
-                print(*seen[d], *c)
+        # the lowest matching pair, so a fresh board always merges two Kei cars into a City hatch
+        for name in CARS[:-1]:
+            same = [c for d, c in cars if d == name]
+            if len(same) >= 2:
+                print(*same[0], *same[1])
                 return
-            seen[d] = c
         sys.exit("no matching pair")
 
 
