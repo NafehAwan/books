@@ -59,7 +59,8 @@ cars() { dismiss_anr; dump; python3 "$HERE/smoke_ui.py" cars "$OUT/ui.xml"; }
 # Reminder alarms still waiting (the alarm dump also lists cancelled ones in its removal history).
 reminders() {
   adb shell dumpsys alarm | grep "SHOW_REMINDER" > "$OUT/reminder_alarms.txt" || true
-  grep -viE "removed|reason" "$OUT/reminder_alarms.txt" | grep -c . || true
+  # waiting alarms print as "tag=..."; removal history lines start with "type=..."
+  grep -cE '^[[:space:]]*tag=' "$OUT/reminder_alarms.txt" || true
 }
 crashed() { adb logcat -d | grep -A2 "FATAL EXCEPTION" | grep -q "Process: $PKG" || adb logcat -d | grep -q "ANR in $PKG"; }
 
@@ -169,7 +170,14 @@ shot 10_resumed
 
 adb shell input keyevent KEYCODE_BACK; sleep 3
 # Back home after a first game: Android 13+ asks once whether reminders may be shown.
-if has "Allow"; then shot 10b_reminder_question; tap "Allow"; sleep 1; else echo "no reminder question (older Android or asked before)"; fi
+if has "Allow Tiny Motors"; then
+  shot 10b_reminder_question
+  read -r X Y < <(python3 "$HERE/smoke_ui.py" exact "$OUT/ui.xml" "Allow"); adb shell input tap "$X" "$Y"; echo "tap 'Allow' at $X,$Y"
+  sleep 2
+  has "Allow Tiny Motors" && { echo "FAIL: the notification question did not close"; exit 1; }
+else
+  echo "no reminder question (older Android or asked before)"
+fi
 REMINDERS=$(reminders)
 echo "reminder alarms while playing: $REMINDERS"; cat "$OUT/reminder_alarms.txt"
 test "$REMINDERS" -eq 0 || { echo "FAIL: reminders should be cancelled while the game is open"; exit 1; }

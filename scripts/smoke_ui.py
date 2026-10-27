@@ -9,6 +9,7 @@
   smoke_ui.py pairlevel <xml>                    -> "x1 y1 x2 y2 level" like pair, plus the merged car's level (1-11)
   smoke_ui.py progress <xml>                     -> the numbers on Home (best score, "N/11" Garage badge), sorted
   smoke_ui.py bounds <xml> <content-desc>        -> "[x1,y1][x2,y2]" of the first node starting with it
+  smoke_ui.py exact <xml> <text>                 -> "x y" of the first node whose text or description is exactly it
 """
 import re
 import sys
@@ -41,6 +42,13 @@ def main():
                 print(n.get("bounds"))
                 return
         sys.exit(f"not found: {sys.argv[3]}")
+    if cmd == "exact":
+        want = sys.argv[3]
+        for desc, (x, y) in all_nodes:
+            if desc == want:
+                print(x, y)
+                return
+        sys.exit(f"not found: {want}")
     if cmd == "center":
         want = sys.argv[3]
         for desc, (x, y) in all_nodes:
