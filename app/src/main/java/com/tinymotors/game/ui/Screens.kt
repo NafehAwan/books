@@ -98,7 +98,7 @@ private val SPARKLES = floatArrayOf(
 @Composable
 fun HomeScreen(state: UiState, vm: GameViewModel) {
     val game = state.game
-    var showGift by remember { mutableStateOf(false) }
+    var showGift by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.giftAvailable, state.loaded) {
         if (state.giftAvailable && state.loaded) showGift = true
     }
@@ -302,7 +302,7 @@ private fun MenuTile(label: String, icon: Int, modifier: Modifier, badge: String
 private fun GiftDialog(toolsFull: Boolean, onOpen: () -> Unit, onClose: () -> Unit) {
     val reduce = LocalReduceMotion.current
     val wasFull = remember { toolsFull }
-    var opened by remember { mutableStateOf(false) }
+    var opened by rememberSaveable { mutableStateOf(false) }
     val pop = remember { Animatable(0f) }
     val t = rememberInfiniteTransition(label = "gift")
     val wob = if (reduce || opened) 0f else t.animateFloat(-1f, 1f, infiniteRepeatable(tween(500), RepeatMode.Reverse), label = "wob").value
